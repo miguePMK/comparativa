@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Petromark — Acceso</title>
+<link rel="icon" type="image/png" href="icon.png"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',Arial,sans-serif;
+  background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.card{background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 20px 60px #0005}
+.logo{text-align:center;margin-bottom:28px}
+.logo img{width:80px;height:80px;object-fit:contain;margin-bottom:12px}
+.logo h1{font-size:20px;font-weight:700;color:#0f3460}
+.logo p{font-size:12px;color:#90A4AE;margin-top:4px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:11px;font-weight:700;color:#546E7A;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input{width:100%;border:1.5px solid #E0E0E0;border-radius:8px;padding:11px 14px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s}
+.form-group input:focus{border-color:#0f3460;box-shadow:0 0 0 3px #0f346018}
+.btn-login{width:100%;background:linear-gradient(135deg,#0f3460,#16213e);color:#fff;border:none;border-radius:8px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;transition:opacity .15s,transform .1s;letter-spacing:.3px}
+.btn-login:hover{opacity:.9;transform:translateY(-1px)}
+.btn-login:active{transform:translateY(0)}
+.error-msg{background:#FFEBEE;color:#C62828;border:1px solid #FFCDD2;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:600;margin-top:14px;display:none;text-align:center}
+.error-msg.show{display:block}
+.divider{display:flex;align-items:center;gap:10px;margin:20px 0 16px;color:#B0BEC5;font-size:11px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#E0E0E0}
+.quick-access{display:flex;flex-direction:column;gap:8px}
+.quick-btn{width:100%;border:1.5px solid #E0E0E0;border-radius:8px;padding:10px 14px;font-size:13px;font-family:inherit;cursor:pointer;background:#FAFAFA;color:#333;text-align:left;display:flex;align-items:center;justify-content:space-between;transition:all .15s}
+.quick-btn:hover{border-color:#0f3460;background:#E3F2FD;color:#0f3460}
+.role-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.role-editor{background:#E3F2FD;color:#0f3460}
+.role-viewer{background:#E8F5E9;color:#2E7D32}
+.footer-note{text-align:center;font-size:10px;color:#B0BEC5;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <img src="icon.png" alt="Petromark"/>
+    <h1>Comparativa de Proveedores</h1>
+    <p>Petromark · Panel de Indumentaria</p>
+  </div>
+
+  <form onsubmit="doLogin(event)">
+    <div class="form-group">
+      <label>Usuario</label>
+      <input type="text" id="inputUser" placeholder="Ingresá tu usuario" autocomplete="username" autocapitalize="off"/>
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="inputPass" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <button type="submit" class="btn-login">Ingresar →</button>
+    <div class="error-msg" id="errorMsg">❌ Usuario o contraseña incorrectos</div>
+  </form>
+
+  <div class="divider">o acceso rápido</div>
+
+  <div class="quick-access">
+    <button class="quick-btn" onclick="quickLogin('editor')">
+      <span>✏️ &nbsp;Administrador</span>
+      <span class="role-badge role-editor">EDITOR</span>
+    </button>
+    <button class="quick-btn" onclick="quickLogin('viewer')">
+      <span>👁 &nbsp;Petromark</span>
+      <span class="role-badge role-viewer">SOLO VISTA</span>
+    </button>
+  </div>
+
+  <div class="footer-note">Petromark accede directamente · Admin requiere contraseña</div>
+</div>
+
+<script>
+const USERS = [
+  { user:"admin",     pass:"pmk1087", role:"editor", name:"Administrador" },
+  { user:"petromark", pass:"",        role:"viewer", name:"Petromark"      },
+];
+
+if(sessionStorage.getItem("cd_session")){
+  window.location.replace("comparativa.html");
+}
+
+function doLogin(e){
+  e.preventDefault();
+  const u=document.getElementById("inputUser").value.trim().toLowerCase();
+  const p=document.getElementById("inputPass").value;
+  const found=USERS.find(x=>x.user===u&&x.pass===p);
+  if(found){
+    sessionStorage.setItem("cd_session",JSON.stringify({role:found.role,name:found.name}));
+    window.location.replace("comparativa.html");
+  } else {
+    const err=document.getElementById("errorMsg");
+    err.classList.add("show");
+    setTimeout(()=>err.classList.remove("show"),3000);
+    document.getElementById("inputPass").value="";
+    document.getElementById("inputPass").focus();
+  }
+}
+
+function quickLogin(role){
+  if(role==="editor"){
+    document.getElementById("inputUser").value="admin";
+    document.getElementById("inputPass").value="";
+    document.getElementById("inputPass").focus();
+  } else {
+    const found=USERS.find(x=>x.user==="petromark");
+    sessionStorage.setItem("cd_session",JSON.stringify({role:found.role,name:found.name}));
+    window.location.replace("comparativa.html");
+  }
+}
+</script>
+</body>
+</html>

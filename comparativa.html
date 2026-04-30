@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Comparativa de Proveedores — Indumentaria</title>
+<link rel="icon" type="image/png" href="icon.png"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#F0F4F8;color:#222;font-size:13px}
+
+.header{background:linear-gradient(135deg,#1565C0,#0D47A1);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.header-left h1{color:#fff;font-size:20px;font-weight:700;letter-spacing:.5px}
+.header-left p{color:#90CAF9;font-size:11px;margin-top:2px}
+.header-right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:none;border-radius:6px;padding:7px 14px;font-weight:600;cursor:pointer;font-size:12px;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-orange{background:#E65100;color:#fff}
+.btn-sync{background:#ffffff22;color:#fff;border:1px solid #ffffff44;font-size:11px;padding:5px 10px}
+
+.card{background:#fff;border-radius:10px;padding:16px 20px;margin:12px 16px;box-shadow:0 1px 5px #0001}
+.card h2{font-size:13px;font-weight:700;margin-bottom:12px;color:#444;display:flex;align-items:center;gap:6px}
+
+.config-bar{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+.config-field{display:flex;flex-direction:column;gap:4px}
+.config-field label{font-size:11px;font-weight:600;color:#666}
+.config-field input{border:1.5px solid #ddd;border-radius:6px;padding:6px 10px;font-size:13px;width:130px}
+.config-field input:focus{outline:none;border-color:#1565C0}
+
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{border-radius:8px;padding:9px 16px;text-align:center;min-width:140px;background:#E3F2FD;border:1.5px solid #1565C0}
+.stat .n{font-size:20px;font-weight:700;color:#1565C0}
+.stat .l{font-size:10px;color:#666;margin-top:1px}
+.stat.green{background:#E8F5E9;border-color:#2E7D32}.stat.green .n{color:#2E7D32}
+.stat.orange{background:#FFF3E0;border-color:#E65100}.stat.orange .n{color:#E65100}
+.stat.purple{background:#F3E5F5;border-color:#7B1FA2}.stat.purple .n{color:#7B1FA2}
+
+.tabs{display:flex;gap:2px;margin:0 16px;border-bottom:2px solid #E0E0E0}
+.tab{padding:9px 18px;cursor:pointer;font-size:12px;font-weight:600;color:#888;border-radius:6px 6px 0 0;transition:all .15s;border:none;background:none}
+.tab.active{background:#1565C0;color:#fff}
+.tab:hover:not(.active){background:#E3F2FD;color:#1565C0}
+.tab-content{display:none}.tab-content.active{display:block}
+
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse}
+thead tr{background:#F5F5F5}
+thead th{padding:8px 10px;text-align:left;font-weight:600;color:#777;font-size:11px;border-bottom:1.5px solid #E0E0E0;white-space:nowrap}
+tbody tr{border-top:1px solid #F0F0F0}
+tbody tr:nth-child(even){background:#FAFAFA}
+tbody tr:hover{background:#EEF5FF}
+td{padding:7px 10px;vertical-align:middle}
+
+.comp-table thead th.proveedor{background:#E8EAF6;color:#3949AB;text-align:center}
+.comp-table thead th.mejor{background:#E8F5E9;color:#2E7D32;text-align:center}
+td.precio{text-align:right;white-space:nowrap}
+td.precio.mejor{background:#E8F5E9;color:#1B5E20;font-weight:700;border-left:3px solid #4CAF50}
+td.precio.caro{color:#999}
+td.total-row{font-weight:700;background:#F5F5F5}
+td.total-mejor{background:#C8E6C9;color:#1B5E20;font-weight:800;text-align:right}
+
+.badge-moneda{display:inline-block;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:4px;vertical-align:middle}
+.badge-usd{background:#FFF8E1;color:#F57F17;border:1px solid #FFE082}
+.badge-ars{background:#E8F5E9;color:#388E3C;border:1px solid #A5D6A7}
+
+input.inp{border:1px solid #E0E0E0;border-radius:5px;padding:4px 8px;font-size:11px;width:100%}
+input.inp:focus{outline:none;border-color:#1565C0}
+input.inp:disabled{cursor:default;background:transparent;color:#444;border-color:transparent}
+.edit-btn{background:none;border:1px solid #ddd;border-radius:4px;padding:2px 7px;font-size:11px;cursor:pointer;color:#555}
+.edit-btn:hover{background:#f0f0f0}
+.del-btn{background:none;border:1px solid #ffcdd2;border-radius:4px;padding:2px 7px;font-size:11px;cursor:pointer;color:#c62828}
+.del-btn:hover{background:#ffebee}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:#0006;z-index:100;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:600px;box-shadow:0 8px 32px #0003;max-height:92vh;overflow-y:auto}
+.modal h3{font-size:16px;margin-bottom:16px;color:#1565C0}
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:11px;font-weight:600;color:#555;margin-bottom:4px}
+.form-row input,.form-row select{width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:#1565C0}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* Precios dentro del modal proveedor */
+.precios-section{margin-top:16px;border:1px solid #E0E0E0;border-radius:8px;overflow:hidden}
+.precios-section-header{background:#E8EAF6;padding:8px 14px;font-size:12px;font-weight:700;color:#3949AB}
+.precio-modal-row{display:grid;grid-template-columns:1fr 140px;gap:8px;padding:7px 12px;border-bottom:1px solid #F0F0F0;align-items:center}
+.precio-modal-row:last-child{border-bottom:none}
+.precio-modal-row:hover{background:#FAFAFA}
+.precio-modal-row .pname{font-size:12px;color:#333}
+.precio-modal-row input{border:1px solid #E0E0E0;border-radius:5px;padding:5px 8px;font-size:12px;text-align:right}
+.precio-modal-row input:focus{outline:none;border-color:#1565C0}
+
+/* Centro de Costo */
+.cc-block{border:1.5px solid #E0E0E0;border-radius:10px;margin-bottom:14px;overflow:hidden}
+.cc-header{background:#F5F5F5;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.cc-header:hover{background:#EEF5FF}
+.cc-title{font-weight:700;font-size:13px;color:#1565C0}
+.cc-meta{font-size:11px;color:#888;margin-top:2px}
+.cc-badge{background:#E3F2FD;color:#1565C0;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700}
+.cc-table{width:100%;border-collapse:collapse}
+.cc-table th{padding:7px 12px;font-weight:600;color:#888;font-size:11px;background:#FAFAFA;border-bottom:1px solid #EEE;text-align:left}
+.cc-table td{padding:7px 12px;font-size:12px;border-top:1px solid #F0F0F0}
+.cc-table tr:hover td{background:#F8F9FF}
+.cc-table input{border:1px solid #E0E0E0;border-radius:5px;padding:4px 8px;font-size:12px;text-align:right;width:80px}
+.cc-table input:focus{outline:none;border-color:#1565C0}
+.cc-table input:disabled{border-color:transparent;background:transparent}
+
+#loading{position:fixed;inset:0;background:#F0F4F8;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:300;gap:12px}
+#loading .spinner{width:36px;height:36px;border:4px solid #ddd;border-top-color:#1565C0;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading p{color:#888;font-size:13px}
+.toast{position:fixed;bottom:20px;right:20px;background:#323232;color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;opacity:0;transition:opacity .3s;z-index:200;pointer-events:none}
+.toast.show{opacity:1}
+.empty{text-align:center;color:#bbb;padding:30px;font-size:12px}
+.footer{text-align:center;color:#aaa;font-size:10px;padding:14px}
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div><p>Cargando datos...</p></div>
+
+<div class="header">
+  <div class="header-left">
+    <h1>👕 <span id="projTitle">Comparativa de Indumentaria</span></h1>
+    <p id="projSub">Novadrill · Panel de cotización de proveedores</p>
+  </div>
+  <div class="header-right" id="headerRight">
+    <span style="color:#90CAF9;font-size:11px">👤 <strong id="userLabel"></strong></span>
+    <button class="btn btn-sync" onclick="syncNow()">🔄 Actualizar</button>
+    <button class="btn" style="background:#ffffff22;color:#fff;border:1px solid #ffffff44;font-size:11px;padding:5px 10px" onclick="logout()">🚪 Salir</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⚙️ Configuración</h2>
+  <div class="config-bar">
+    <div class="config-field">
+      <label>Tipo de Cambio USD→ARS</label>
+      <input type="number" id="cfgTC" value="1420" step="1" oninput="onCfgChange()" onblur="saveCfgNow()"/>
+    </div>
+    <div class="config-field">
+      <label>Fecha de cotización</label>
+      <input type="date" id="cfgFecha" oninput="onCfgChange()" onchange="saveCfgNow()"/>
+    </div>
+    <div class="config-field">
+      <label>Empresa / Proyecto</label>
+      <input type="text" id="cfgEmpresa" value="Novadrill" style="width:180px" oninput="onCfgChange()" onblur="saveCfgNow()"/>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>📊 Resumen</h2>
+  <div class="stats" id="statsBar"></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('comparativa',this)">📊 Comparativa</button>
+  <button class="tab" onclick="showTab('productos',this)">📦 Productos</button>
+  <button class="tab" onclick="showTab('proveedores',this)">🏭 Proveedores</button>
+  <button class="tab" onclick="showTab('centros',this)">🏗️ Centro de Costo</button>
+</div>
+
+<!-- COMPARATIVA -->
+<div id="tab-comparativa" class="tab-content active">
+  <div class="card">
+    <h2>📊 Tabla Comparativa
+      <span style="margin-left:auto">
+        <button class="btn" style="background:#1565C0;color:#fff;font-size:11px" onclick="exportExcel()">⬇ Exportar Excel</button>
+      </span>
+    </h2>
+    <div class="table-wrap">
+      <table class="comp-table"><thead id="compHead"></thead><tbody id="compBody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCTOS -->
+<div id="tab-productos" class="tab-content">
+  <div class="card">
+    <h2>📦 Productos
+      <span style="margin-left:auto" id="btnAddProd"></span>
+    </h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:5%">#</th>
+          <th>Descripción</th>
+          <th style="width:22%">Marca / Modelo</th>
+          <th style="width:22%">Notas</th>
+          <th id="prodAccCol" style="width:10%;display:none">Acciones</th>
+        </tr></thead>
+        <tbody id="prodBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PROVEEDORES -->
+<div id="tab-proveedores" class="tab-content">
+  <div class="card">
+    <h2>🏭 Proveedores
+      <span style="margin-left:auto" id="btnAddProv"></span>
+    </h2>
+    <div id="provList"></div>
+  </div>
+</div>
+
+<!-- CENTRO DE COSTO -->
+<div id="tab-centros" class="tab-content">
+  <div class="card">
+    <h2>🏗️ Centro de Costo
+      <span style="margin-left:auto" id="btnAddCC"></span>
+    </h2>
+    <p style="font-size:11px;color:#888;margin-bottom:14px">
+      Ingresá las cantidades de cada producto por centro de costo. Los totales se calculan automáticamente en la comparativa.
+    </p>
+    <div id="ccList"></div>
+  </div>
+</div>
+
+<!-- ═══ MODALS ══════════════════════════════════════════════════════ -->
+
+<div class="overlay" id="modalProd">
+  <div class="modal">
+    <h3 id="mProdTitle">Nuevo Producto</h3>
+    <div class="form-row"><label>Descripción</label><input id="mProdDesc" placeholder="Ej: Mameluco Ignífugo"/></div>
+    <div class="form-row"><label>Marca / Modelo</label><input id="mProdMarca" placeholder="Ej: Ombu Talle L · Mameluco 3/4 FR"/></div>
+    <div class="form-row"><label>Notas (opcional)</label><input id="mProdNota" placeholder="Ej: Con cinta reflectiva"/></div>
+    <input type="hidden" id="mProdId"/>
+    <div class="modal-btns">
+      <button class="btn" style="background:#eee;color:#333" onclick="closeModal('modalProd')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveProducto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modalProv">
+  <div class="modal">
+    <h3 id="mProvTitle">Nuevo Proveedor</h3>
+    <div class="form-row-2">
+      <div class="form-row" style="margin:0"><label>Nombre</label><input id="mProvNombre" placeholder="Ej: MESETA"/></div>
+      <div class="form-row" style="margin:0"><label>Condición de pago</label><input id="mProvPago" placeholder="Ej: 30 FF"/></div>
+    </div>
+    <div class="form-row-2" style="margin-top:12px">
+      <div class="form-row" style="margin:0"><label>Tiempo de entrega</label><input id="mProvEntrega" placeholder="Ej: 20 días"/></div>
+      <div class="form-row" style="margin:0"><label>Moneda</label>
+        <select id="mProvMoneda" onchange="renderPreciosModal()">
+          <option value="ARS">$ ARS (pesos)</option>
+          <option value="USD">USD (dólares)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:12px"><label>Contacto / Notas</label><input id="mProvNota" placeholder="Opcional"/></div>
+
+    <div class="precios-section">
+      <div class="precios-section-header">
+        💰 Precio unitario por producto — <span id="mProvMonedaLbl" style="font-weight:400"></span>
+      </div>
+      <div id="mProvPrecios"></div>
+    </div>
+
+    <input type="hidden" id="mProvId"/>
+    <div class="modal-btns">
+      <button class="btn" style="background:#eee;color:#333" onclick="closeModal('modalProv')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveProveedor()">Guardar Proveedor</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modalCC">
+  <div class="modal">
+    <h3 id="mCCTitle">Nuevo Centro de Costo</h3>
+    <div class="form-row"><label>Nombre</label><input id="mCCNombre" placeholder="Ej: CO PC YPF"/></div>
+    <input type="hidden" id="mCCId"/>
+    <div class="modal-btns">
+      <button class="btn" style="background:#eee;color:#333" onclick="closeModal('modalCC')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveCC()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="footer">Datos guardados localmente · <span id="lastSaved">—</span></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── STORAGE — localStorage ────────────────────────────────────────────────
+const STORAGE_KEY = "comparativa_v3_data";
+
+// ── AUTH — verificar sesión ────────────────────────────────────────────────
+const _session = JSON.parse(sessionStorage.getItem("cd_session")||"null");
+if(!_session){ window.location.replace("index.html"); }
+const isAdmin = _session?.role === "editor";
+const _userName = _session?.name || "";
+
+let ccCollapsed = {};
+let provCollapsed = {};
+let tmpPrecios = {};
+
+// ── DEFAULT STATE ─────────────────────────────────────────────────────────
+const DEF = {
+  config:{ tc:1420, fecha:new Date().toISOString().split("T")[0], empresa:"Novadrill" },
+  productos:[
+    {id:"P1",desc:"Chomba",nota:"",marca:""},
+    {id:"P2",desc:"Pantalón Jean H",nota:"",marca:""},
+    {id:"P3",desc:"Pantalón Jean M",nota:"",marca:""},
+    {id:"P4",desc:"Media Térmica",nota:"",marca:""},
+    {id:"P5",desc:"Botín Administrativo",nota:"",marca:""},
+    {id:"P6",desc:"Botín Media Caña",nota:"",marca:""},
+    {id:"P7",desc:"Borceguí",nota:"",marca:""},
+    {id:"P8",desc:"Bota de Goma c/ Puntera",nota:"",marca:""},
+    {id:"P9",desc:"Mameluco Ignífugo",nota:"",marca:""},
+    {id:"P10",desc:"Mameluco Común",nota:"",marca:""},
+    {id:"P11",desc:"Bordado Espalda",nota:"",marca:""},
+    {id:"P12",desc:"Bordado Frente",nota:"",marca:""},
+    {id:"P13",desc:"Guardapolvo Ignífugo",nota:"",marca:""},
+    {id:"P14",desc:"Campera Ignífuga",nota:"",marca:""},
+  ],
+  proveedores:[
+    {id:"V1",nombre:"BORIS (Safety&Style)",pago:"0-30-60-90 FF",entrega:"",moneda:"USD",nota:""},
+    {id:"V2",nombre:"MESETA",pago:"30 FF",entrega:"",moneda:"ARS",nota:""},
+    {id:"V3",nombre:"PROV-IND",pago:"30 FF",entrega:"",moneda:"ARS",nota:""},
+    {id:"V4",nombre:"SEGUSUR",pago:"30 FF",entrega:"",moneda:"ARS",nota:""},
+  ],
+  precios:{
+    "V1":{"P1":21300,"P2":31240,"P3":35500,"P4":5680,"P5":82360,"P6":92300,"P7":113600,"P8":99400,"P9":198800,"P10":127800,"P11":7100,"P12":3550,"P13":0,"P14":177500},
+    "V2":{"P1":20309.4,"P2":35208.56,"P3":31828.23,"P4":9180,"P5":81209.63,"P6":74533.82,"P7":99043.52,"P8":26642.35,"P9":133835,"P10":82236.46,"P11":18000,"P12":18000,"P13":0,"P14":125670},
+    "V3":{"P1":24750,"P2":48000,"P3":28790,"P4":10650,"P5":92990,"P6":69010,"P7":99500,"P8":20900,"P9":178420,"P10":99140,"P11":7200,"P12":4200,"P13":0,"P14":115730},
+    "V4":{"P1":14170,"P2":37247.6,"P3":55711.07,"P4":7241,"P5":73423.24,"P6":101553.61,"P7":146367,"P8":22326,"P9":97300,"P10":0,"P11":7428.58,"P12":3714.28,"P13":0,"P14":157975},
+  },
+  centros:[
+    {id:"CC1",nombre:"CO PC YPF",    cantidades:{"P1":{h:1,m:0},"P2":{h:1,m:0},"P4":{h:10,m:0},"P5":{h:1,m:0},"P6":{h:4,m:0},"P9":{h:4,m:0},"P11":{h:4,m:0},"P12":{h:1,m:0},"P14":{h:4,m:0}}},
+    {id:"CC2",nombre:"CO PC CGC",    cantidades:{"P3":{h:0,m:1},"P4":{h:12,m:0},"P5":{h:0,m:1},"P6":{h:5,m:0},"P9":{h:5,m:0},"P11":{h:5,m:0},"P12":{h:0,m:1},"P14":{h:5,m:0}}},
+    {id:"CC3",nombre:"CO END CGC",   cantidades:{"P1":{h:1,m:0},"P2":{h:1,m:0},"P4":{h:20,m:0},"P5":{h:1,m:0},"P6":{h:9,m:0},"P9":{h:9,m:0},"P11":{h:9,m:0},"P12":{h:1,m:0},"P14":{h:9,m:0}}},
+    {id:"CC4",nombre:"LH LAB YPF",   cantidades:{"P3":{h:0,m:3},"P4":{h:24,m:0},"P6":{h:12,m:0},"P9":{h:9,m:0},"P11":{h:9,m:0},"P12":{h:0,m:3},"P14":{h:9,m:0}}},
+    {id:"CC5",nombre:"LH PC YPF",    cantidades:{"P4":{h:18,m:0},"P6":{h:9,m:0},"P9":{h:9,m:0},"P11":{h:9,m:0},"P14":{h:9,m:0}}},
+    {id:"CC6",nombre:"CR END PAE",   cantidades:{"P4":{h:102,m:0},"P6":{h:51,m:0},"P9":{h:51,m:0},"P11":{h:51,m:0},"P14":{h:51,m:0}}},
+    {id:"CC7",nombre:"CR PC PAE",    cantidades:{"P7":{h:6,m:0},"P9":{h:6,m:0},"P11":{h:6,m:0},"P14":{h:6,m:0}}},
+    {id:"CC8",nombre:"CR PC YPF",    cantidades:{"P2":{h:2,m:0},"P4":{h:26,m:0},"P6":{h:11,m:0},"P9":{h:11,m:0},"P11":{h:11,m:0},"P14":{h:11,m:0}}},
+    {id:"CC9",nombre:"CR BASE",      cantidades:{"P4":{h:2,m:0},"P6":{h:1,m:0},"P9":{h:1,m:0},"P11":{h:1,m:0},"P14":{h:1,m:0}}},
+    {id:"CC10",nombre:"CO ADM / BASE",cantidades:{"P4":{h:4,m:0},"P6":{h:2,m:0},"P9":{h:2,m:0},"P11":{h:2,m:0},"P14":{h:2,m:0}}},
+  ]
+};
+
+let S = JSON.parse(JSON.stringify(DEF));
+
+// ── PERSISTENCE ───────────────────────────────────────────────────────────
+function saveNow(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
+    showToast("✅ Guardado");
+    document.getElementById("lastSaved").textContent=new Date().toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  } catch(e){ showToast("❌ Error al guardar"); }
+}
+function syncNow(){
+  const raw=localStorage.getItem(STORAGE_KEY);
+  if(raw){ try{ mergeState(JSON.parse(raw)); renderAll(); showToast("✅ Recargado"); }catch(e){ showToast("❌ Error al leer datos"); } }
+  else showToast("Sin datos guardados");
+}
+function mergeState(d){
+  S=d;
+  if(!S.config)     S.config     = DEF.config;
+  if(!S.productos)  S.productos  = [];
+  if(!S.proveedores)S.proveedores= [];
+  if(!S.precios)    S.precios    = {};
+  if(!S.centros)    S.centros    = [];
+  // migrar: agregar marca si no existe en productos
+  S.productos.forEach(p=>{ if(p.marca===undefined) p.marca=""; });
+  // migrar: cantidades numéricas antiguas → {h, m}
+  S.centros.forEach(cc=>{
+    if(!cc.cantidades) cc.cantidades={};
+    Object.keys(cc.cantidades).forEach(pid=>{
+      const v=cc.cantidades[pid];
+      if(typeof v==="number") cc.cantidades[pid]={h:v,m:0};
+    });
+  });
+}
+function showToast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2200); }
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+const fmt = n => (!n&&n!==0) ? "—" : "$\u202F"+Math.round(n).toLocaleString("es-AR");
+const toARS = (p,mon) => !p ? 0 : mon==="USD" ? p*(S.config.tc||1420) : p;
+const getRaw = (vid,pid) => (S.precios[vid]||{})[pid]||0;
+const getARS = (vid,pid) => { const v=S.proveedores.find(x=>x.id===vid); return v ? toARS(getRaw(vid,pid),v.moneda) : 0; };
+// getCC: devuelve {h,m} normalizado
+const getCC  = (cc,pid)  => { const v=(cc.cantidades||{})[pid]; if(!v) return {h:0,m:0}; if(typeof v==="number") return {h:v,m:0}; return {h:v.h||0,m:v.m||0}; };
+const getTotalCant = pid => (S.centros||[]).reduce((s,cc)=>{ const v=getCC(cc,pid); return s+v.h+v.m; },0);
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────
+function renderAll(){
+  renderConfig(); renderStats(); renderComparativa();
+  renderProductos(); renderProveedores(); renderCentros();
+  document.getElementById("projTitle").textContent=(S.config.empresa||"Proyecto")+" — Comparativa Proveedores";
+  document.getElementById("userLabel").textContent=_userName + (isAdmin?" (Editor)":" (Vista)");
+}
+
+function logout(){
+  sessionStorage.removeItem("cd_session");
+  window.location.replace("index.html");
+}
+
+// ── CONFIG ────────────────────────────────────────────────────────────────
+function renderConfig(){
+  document.getElementById("cfgTC").value     = S.config.tc||1420;
+  document.getElementById("cfgFecha").value  = S.config.fecha||"";
+  document.getElementById("cfgEmpresa").value= S.config.empresa||"";
+}
+function onCfgChange(){
+  S.config.tc     = parseFloat(document.getElementById("cfgTC").value)||1420;
+  S.config.fecha  = document.getElementById("cfgFecha").value;
+  S.config.empresa= document.getElementById("cfgEmpresa").value;
+  renderComparativa(); renderStats();
+}
+function saveCfgNow(){ onCfgChange(); if(isAdmin) saveNow(); }
+
+// ── STATS ─────────────────────────────────────────────────────────────────
+function renderStats(){
+  const totales = S.proveedores.map(v=>({
+    nombre:v.nombre,
+    total:S.productos.reduce((s,p)=>s+getARS(v.id,p.id)*getTotalCant(p.id),0)
+  })).filter(x=>x.total>0).sort((a,b)=>a.total-b.total);
+
+  if(!totales.length){ document.getElementById("statsBar").innerHTML='<div style="color:#bbb;font-size:12px">Sin datos de precios aún.</div>'; return; }
+  const mejor=totales[0], peor=totales[totales.length-1];
+  document.getElementById("statsBar").innerHTML=`
+    <div class="stat green"><div class="n">${fmt(mejor.total)}</div><div class="l">💚 Mejor oferta — ${mejor.nombre}</div></div>
+    <div class="stat orange"><div class="n">${fmt(peor.total)}</div><div class="l">⬆ Mayor costo — ${peor.nombre}</div></div>
+    <div class="stat purple"><div class="n">${fmt(peor.total-mejor.total)}</div><div class="l">💡 Ahorro potencial</div></div>
+    <div class="stat"><div class="n">${S.productos.length}</div><div class="l">Productos</div></div>
+    <div class="stat"><div class="n">${(S.config.tc||1420).toLocaleString("es-AR")}</div><div class="l">TC USD→ARS</div></div>`;
+}
+
+// ── COMPARATIVA ───────────────────────────────────────────────────────────
+function renderComparativa(){
+  const provs=S.proveedores, prods=S.productos;
+  if(!provs.length||!prods.length){
+    document.getElementById("compHead").innerHTML="";
+    document.getElementById("compBody").innerHTML='<tr><td colspan="99" class="empty">Sin datos. Agregá productos y proveedores.</td></tr>';
+    return;
+  }
+  // cabecera
+  let th=`<tr><th>#</th><th style="min-width:170px">Descripción</th><th style="text-align:right">Cant.</th>`;
+  provs.forEach(v=>{ th+=`<th class="proveedor" style="min-width:140px">${v.nombre}<br/><span class="badge-moneda ${v.moneda==='USD'?'badge-usd':'badge-ars'}">${v.moneda}</span><span style="display:block;font-size:9px;color:#666;font-weight:400">${v.pago||''}</span></th>`; });
+  th+=`<th class="mejor" style="min-width:130px">✅ Mejor precio<br/><span style="font-size:9px;font-weight:400">Total ARS</span></th></tr>`;
+  document.getElementById("compHead").innerHTML=th;
+
+  const totProv={};
+  provs.forEach(v=>totProv[v.id]=0);
+  let totalMejor=0, rows="";
+
+  prods.forEach((p,pi)=>{
+    const cant=getTotalCant(p.id);
+    const arsArr=provs.map(v=>getARS(v.id,p.id));
+    const validos=arsArr.filter(x=>x>0);
+    const minP=validos.length?Math.min(...validos):0;
+    totalMejor+=minP*cant;
+
+    let tds="";
+    provs.forEach((v,vi)=>{
+      const raw=getRaw(v.id,p.id), ars=arsArr[vi], tot=ars*cant;
+      totProv[v.id]+=tot;
+      const esMejor=ars>0&&ars===minP;
+      tds+=`<td class="precio ${(!raw||!ars)?'caro':esMejor?'mejor':'caro'}">
+        ${(!raw||!ars)
+          ? `<span style="color:#ddd">—</span>`
+          : `<div style="font-size:14px;font-weight:700;color:${esMejor?'#1B5E20':'#444'}">${fmt(ars*cant)}</div><div style="font-size:9px;color:${esMejor?'#4CAF50':'#bbb'};text-align:right;margin-top:1px">Unit: ${fmt(raw)}</div>`
+        }</td>`;
+    });
+
+    const gi=minP>0?arsArr.indexOf(minP):-1;
+    rows+=`<tr>
+      <td style="color:#aaa;font-size:11px">${pi+1}</td>
+      <td><strong>${p.desc}</strong>${p.nota?`<div style="font-size:10px;color:#aaa">${p.nota}</div>`:''}</td>
+      <td style="text-align:right;font-weight:600;color:${cant?'#333':'#ccc'}">${cant||0}</td>
+      ${tds}
+      <td class="precio"><div style="font-weight:700;color:#1B5E20">${fmt(minP*cant)}</div><div style="font-size:9px;color:#888">${gi>=0?provs[gi].nombre:'—'}</div></td>
+    </tr>`;
+  });
+
+  let totTds="";
+  provs.forEach(v=>{ totTds+=`<td class="precio total-row" style="text-align:right">${fmt(totProv[v.id])}</td>`; });
+  rows+=`<tr><td colspan="3" class="total-row" style="text-align:right;padding-right:12px">TOTAL GENERAL:</td>${totTds}<td class="total-mejor">${fmt(totalMejor)}</td></tr>`;
+
+  document.getElementById("compBody").innerHTML=rows;
+}
+
+// ── PRODUCTOS ─────────────────────────────────────────────────────────────
+function renderProductos(){
+  document.getElementById("btnAddProd").innerHTML = isAdmin
+    ? `<button class="btn btn-orange" onclick="openModalProd()">＋ Agregar producto</button>` : "";
+  const accCol=document.getElementById("prodAccCol");
+  if(accCol) accCol.style.display=isAdmin?"":"none";
+
+  document.getElementById("prodBody").innerHTML = S.productos.map((p,i)=>`<tr>
+    <td style="color:#aaa;font-size:11px">${i+1}</td>
+    <td><strong>${p.desc}</strong></td>
+    <td style="color:#555;font-size:11px">${p.marca||'<span style="color:#ddd">—</span>'}</td>
+    <td style="color:#888;font-size:11px">${p.nota||''}</td>
+    ${isAdmin?`<td><button class="edit-btn" onclick="openModalProd('${p.id}')">✏️</button> <button class="del-btn" onclick="delProducto('${p.id}')">🗑</button></td>`:''}
+  </tr>`).join("") || '<tr><td colspan="5" class="empty">Sin productos</td></tr>';
+}
+
+function openModalProd(id){
+  const p=id?S.productos.find(x=>x.id===id):null;
+  document.getElementById("mProdTitle").textContent=p?"Editar Producto":"Nuevo Producto";
+  document.getElementById("mProdDesc").value=p?.desc||"";
+  document.getElementById("mProdMarca").value=p?.marca||"";
+  document.getElementById("mProdNota").value=p?.nota||"";
+  document.getElementById("mProdId").value=id||"";
+  document.getElementById("modalProd").classList.add("open");
+}
+function saveProducto(){
+  const desc=document.getElementById("mProdDesc").value.trim();
+  if(!desc){alert("La descripción es obligatoria");return;}
+  const id=document.getElementById("mProdId").value;
+  const marca=document.getElementById("mProdMarca").value.trim();
+  const nota=document.getElementById("mProdNota").value.trim();
+  if(id){ const p=S.productos.find(x=>x.id===id); p.desc=desc; p.marca=marca; p.nota=nota; }
+  else { S.productos.push({id:"P"+Date.now()%100000,desc,marca,nota}); }
+  if(isAdmin)saveNow(); closeModal("modalProd"); renderAll();
+}
+function delProducto(id){
+  if(!confirm("¿Eliminar este producto?"))return;
+  S.productos=S.productos.filter(x=>x.id!==id);
+  Object.values(S.precios).forEach(v=>delete v[id]);
+  S.centros.forEach(cc=>{if(cc.cantidades)delete cc.cantidades[id];});
+  if(isAdmin)saveNow(); renderAll();
+}
+
+// ── PROVEEDORES ───────────────────────────────────────────────────────────
+function renderProveedores(){
+  document.getElementById("btnAddProv").innerHTML = isAdmin
+    ? `<button class="btn btn-orange" onclick="openModalProv()">＋ Agregar proveedor</button>` : "";
+
+  document.getElementById("provList").innerHTML = S.proveedores.map(v=>{
+    const tot=S.productos.reduce((s,p)=>s+getARS(v.id,p.id)*getTotalCant(p.id),0);
+    const isOpen=!provCollapsed[v.id];
+    const precioRows=S.productos.map(p=>{
+      const raw=getRaw(v.id,p.id);
+      return `<tr><td style="color:#555;padding:6px 12px;font-size:12px;border-top:1px solid #F0F0F0">${p.desc}${p.marca?` <span style="font-size:10px;color:#aaa">${p.marca}</span>`:''}</td>
+        <td style="text-align:right;padding:6px 12px;font-size:12px;font-weight:${raw?600:400};color:${raw?'#333':'#ccc'};border-top:1px solid #F0F0F0">${raw?fmt(raw):'—'}</td>
+        <td style="text-align:right;padding:6px 12px;font-size:10px;color:#888;border-top:1px solid #F0F0F0">${raw?fmt(toARS(raw,v.moneda)):'—'}</td></tr>`;
+    }).join("");
+    return `<div class="cc-block">
+      <div class="cc-header" onclick="toggleProv('${v.id}')">
+        <div>
+          <div class="cc-title" style="display:flex;align-items:center;gap:6px">
+            ${v.nombre}
+            <span class="badge-moneda ${v.moneda==='USD'?'badge-usd':'badge-ars'}">${v.moneda}</span>
+          </div>
+          <div class="cc-meta">${v.pago?`Pago: ${v.pago}`:''} ${v.entrega?`· Entrega: ${v.entrega}`:''} ${v.nota?`· ${v.nota}`:''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="text-align:right">
+            <div style="font-size:16px;font-weight:700;color:#1565C0">${fmt(tot)}</div>
+            <div style="font-size:10px;color:#888">Total cotización</div>
+          </div>
+          ${isAdmin?`<button class="edit-btn" onclick="event.stopPropagation();openModalProv('${v.id}')">✏️ Editar</button><button class="del-btn" onclick="event.stopPropagation();delProveedor('${v.id}')">🗑</button>`:''}
+          <span id="provchev-${v.id}" style="color:#aaa;font-size:12px">${isOpen?'▲':'▼'}</span>
+        </div>
+      </div>
+      <div id="provbody-${v.id}" style="display:${isOpen?'':'none'};overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;background:#FAFAFA">
+          <thead><tr>
+            <th style="padding:6px 12px;font-weight:600;color:#888;text-align:left;font-size:11px;border-bottom:1px solid #EEE">Producto</th>
+            <th style="padding:6px 12px;font-weight:600;color:#888;text-align:right;font-size:11px;border-bottom:1px solid #EEE">Precio (${v.moneda})</th>
+            <th style="padding:6px 12px;font-weight:600;color:#888;text-align:right;font-size:11px;border-bottom:1px solid #EEE">En ARS</th>
+          </tr></thead>
+          <tbody>${precioRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join("") || '<div class="empty">Sin proveedores</div>';
+}
+
+function toggleProv(id){
+  provCollapsed[id]=!provCollapsed[id];
+  const body=document.getElementById("provbody-"+id);
+  if(body) body.style.display=provCollapsed[id]?"none":"";
+  const chev=document.getElementById("provchev-"+id);
+  if(chev) chev.textContent=provCollapsed[id]?"▼":"▲";
+}
+
+function renderPreciosModal(){
+  const moneda=document.getElementById("mProvMoneda").value;
+  document.getElementById("mProvMonedaLbl").textContent=
+    moneda==="USD"?`en USD (TC: ${S.config.tc||1420})`:"en $ ARS";
+  document.getElementById("mProvPrecios").innerHTML=S.productos.map(p=>`
+    <div class="precio-modal-row">
+      <span class="pname">${p.desc}${p.nota?` <span style="font-size:10px;color:#aaa">${p.nota}</span>`:''}</span>
+      <input type="number" min="0" step="0.01" id="mp_${p.id}"
+        value="${tmpPrecios[p.id]||''}" placeholder="0"
+        oninput="tmpPrecios['${p.id}']=parseFloat(this.value)||0"/>
+    </div>`).join("")||'<div style="padding:12px;color:#bbb;text-align:center;font-size:12px">Sin productos cargados</div>';
+}
+
+function openModalProv(id){
+  const v=id?S.proveedores.find(x=>x.id===id):null;
+  document.getElementById("mProvTitle").textContent=v?"Editar Proveedor":"Nuevo Proveedor";
+  document.getElementById("mProvNombre").value =v?.nombre||"";
+  document.getElementById("mProvPago").value   =v?.pago||"";
+  document.getElementById("mProvEntrega").value=v?.entrega||"";
+  document.getElementById("mProvMoneda").value =v?.moneda||"ARS";
+  document.getElementById("mProvNota").value   =v?.nota||"";
+  document.getElementById("mProvId").value     =id||"";
+  tmpPrecios=id?JSON.parse(JSON.stringify(S.precios[id]||{})):{};
+  renderPreciosModal();
+  document.getElementById("modalProv").classList.add("open");
+}
+function saveProveedor(){
+  const nombre=document.getElementById("mProvNombre").value.trim();
+  if(!nombre){alert("El nombre es obligatorio");return;}
+  // leer del DOM por si no disparó oninput
+  S.productos.forEach(p=>{ const el=document.getElementById("mp_"+p.id); if(el){const v=parseFloat(el.value)||0;if(v>0)tmpPrecios[p.id]=v;} });
+  const id=document.getElementById("mProvId").value;
+  const datos={nombre,pago:document.getElementById("mProvPago").value.trim(),entrega:document.getElementById("mProvEntrega").value.trim(),moneda:document.getElementById("mProvMoneda").value,nota:document.getElementById("mProvNota").value.trim()};
+  if(id){
+    Object.assign(S.proveedores.find(x=>x.id===id),datos);
+    S.precios[id]={...(S.precios[id]||{}),...tmpPrecios};
+  } else {
+    const nid="V"+Date.now()%100000;
+    datos.id=nid;
+    S.proveedores.push(datos);
+    S.precios[nid]={...tmpPrecios};
+  }
+  if(isAdmin)saveNow(); closeModal("modalProv"); renderAll();
+}
+function delProveedor(id){
+  if(!confirm("¿Eliminar este proveedor y todos sus precios?"))return;
+  S.proveedores=S.proveedores.filter(x=>x.id!==id);
+  delete S.precios[id];
+  if(isAdmin)saveNow(); renderAll();
+}
+
+// ── CENTRO DE COSTO ───────────────────────────────────────────────────────
+function renderCentros(){
+  document.getElementById("btnAddCC").innerHTML=isAdmin
+    ?`<button class="btn btn-orange" onclick="openModalCC()">＋ Agregar centro</button>`:"";
+
+  document.getElementById("ccList").innerHTML=(S.centros||[]).map(cc=>{
+    const isOpen=!ccCollapsed[cc.id];
+    let totalH=0, totalM=0;
+    S.productos.forEach(p=>{ const v=getCC(cc,p.id); totalH+=v.h; totalM+=v.m; });
+    const totalU=totalH+totalM;
+
+    const prodRows=S.productos.map(p=>{
+      const v=getCC(cc,p.id);
+      const inp = (gen) => isAdmin
+        ? `<input type="number" min="0" value="${v[gen]||''}" placeholder="0"
+             oninput="onCantInput('${cc.id}','${p.id}','${gen}',this.value)"
+             onblur="onCantBlur('${cc.id}','${p.id}','${gen}',this.value)"/>`
+        : `<span style="font-size:12px;font-weight:600;color:${v[gen]?'#333':'#ccc'}">${v[gen]||'—'}</span>`;
+      return `<tr>
+        <td>${p.desc}${p.marca?` <span style="font-size:10px;color:#aaa">${p.marca}</span>`:''}</td>
+        <td style="text-align:center">${inp('h')}</td>
+        <td style="text-align:center">${inp('m')}</td>
+        <td style="text-align:right;font-weight:600;color:${(v.h+v.m)?'#1565C0':'#ccc'}" id="cctot-${cc.id}-${p.id}">${v.h+v.m||'—'}</td>
+      </tr>`;
+    }).join("");
+
+    return `<div class="cc-block">
+      <div class="cc-header" onclick="toggleCC('${cc.id}')">
+        <div>
+          <div class="cc-title">${cc.nombre}</div>
+          <div class="cc-meta" id="ccmeta-${cc.id}">
+            ${totalU} u. total
+            ${totalH>0?`<span style="margin-left:8px;color:#1565C0">♂ ${totalH}</span>`:''}
+            ${totalM>0?`<span style="margin-left:6px;color:#E91E8C">♀ ${totalM}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="cc-badge" id="ccbadge-${cc.id}">${totalU} u.</span>
+          ${isAdmin?`<button class="edit-btn" onclick="event.stopPropagation();openModalCC('${cc.id}')">✏️</button><button class="del-btn" onclick="event.stopPropagation();delCC('${cc.id}')">🗑</button>`:''}
+          <span id="ccchev-${cc.id}" style="color:#aaa;font-size:12px">${isOpen?'▲':'▼'}</span>
+        </div>
+      </div>
+      <div id="ccbody-${cc.id}" style="display:${isOpen?'':'none'}">
+        <table class="cc-table">
+          <thead><tr>
+            <th style="width:55%">Producto</th>
+            <th style="text-align:center;color:#1565C0">♂ Hombre</th>
+            <th style="text-align:center;color:#E91E8C">♀ Mujer</th>
+            <th style="text-align:right">Total</th>
+          </tr></thead>
+          <tbody>${prodRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join("")||'<div class="empty">Sin centros de costo</div>';
+}
+
+function toggleCC(id){
+  ccCollapsed[id]=!ccCollapsed[id];
+  const body=document.getElementById("ccbody-"+id);
+  if(body) body.style.display=ccCollapsed[id]?"none":"";
+  const chev=document.getElementById("ccchev-"+id);
+  if(chev) chev.textContent=ccCollapsed[id]?"▼":"▲";
+}
+
+function onCantInput(ccId,pid,gen,val){
+  const cc=S.centros.find(x=>x.id===ccId); if(!cc)return;
+  if(!cc.cantidades)cc.cantidades={};
+  if(!cc.cantidades[pid]||typeof cc.cantidades[pid]==="number") cc.cantidades[pid]={h:0,m:0};
+  cc.cantidades[pid][gen]=parseInt(val)||0;
+  // actualizar celda total de esa fila
+  const rowTot=document.getElementById("cctot-"+ccId+"-"+pid);
+  const v=cc.cantidades[pid]; const sum=v.h+v.m;
+  if(rowTot){ rowTot.textContent=sum||'—'; rowTot.style.color=sum?'#1565C0':'#ccc'; }
+  // actualizar meta en header
+  let totalH=0,totalM=0;
+  S.productos.forEach(p=>{ const v=getCC(cc,p.id); totalH+=v.h; totalM+=v.m; });
+  const totalU=totalH+totalM;
+  const meta=document.getElementById("ccmeta-"+ccId);
+  if(meta) meta.innerHTML=`${totalU} u. total${totalH>0?`<span style="margin-left:8px;color:#1565C0">♂ ${totalH}</span>`:''}${totalM>0?`<span style="margin-left:6px;color:#E91E8C">♀ ${totalM}</span>`:''}`;
+  const badge=document.getElementById("ccbadge-"+ccId); if(badge)badge.textContent=totalU+" u.";
+  renderStats();
+}
+function onCantBlur(ccId,pid,gen,val){
+  onCantInput(ccId,pid,gen,val);
+  renderComparativa();
+  if(isAdmin)saveNow();
+}
+
+function openModalCC(id){
+  const cc=id?S.centros.find(x=>x.id===id):null;
+  document.getElementById("mCCTitle").textContent=cc?"Editar Centro":"Nuevo Centro de Costo";
+  document.getElementById("mCCNombre").value=cc?.nombre||"";
+  document.getElementById("mCCId").value=id||"";
+  document.getElementById("modalCC").classList.add("open");
+}
+function saveCC(){
+  const nombre=document.getElementById("mCCNombre").value.trim();
+  if(!nombre){alert("El nombre es obligatorio");return;}
+  const id=document.getElementById("mCCId").value;
+  if(id){ S.centros.find(x=>x.id===id).nombre=nombre; }
+  else   { S.centros.push({id:"CC"+Date.now()%100000,nombre,cantidades:{}}); }
+  if(isAdmin)saveNow(); closeModal("modalCC"); renderCentros();
+}
+function delCC(id){
+  if(!confirm("¿Eliminar este centro de costo?"))return;
+  S.centros=S.centros.filter(x=>x.id!==id);
+  if(isAdmin)saveNow(); renderAll();
+}
+
+// ── EXPORT EXCEL ─────────────────────────────────────────────────────────
+function exportExcel(){
+  const wb=XLSX.utils.book_new(), provs=S.proveedores, prods=S.productos;
+
+  // Hoja Comparativa
+  const hdr=["#","Descripción","Cant. Total",...provs.flatMap(v=>[`${v.nombre} (${v.moneda})`,`${v.nombre} Total ARS`]),"Mejor Unit.","Mejor Total","Proveedor"];
+  const rows=[hdr]; const totP={};
+  provs.forEach(v=>totP[v.id]=0); let totMejor=0;
+  prods.forEach((p,pi)=>{
+    const cant=getTotalCant(p.id);
+    const ars=provs.map(v=>getARS(v.id,p.id));
+    const val=ars.filter(x=>x>0); const minP=val.length?Math.min(...val):0;
+    totMejor+=minP*cant;
+    const row=[pi+1,p.desc,cant];
+    provs.forEach((v,vi)=>{ const raw=getRaw(v.id,p.id); totP[v.id]+=ars[vi]*cant; row.push(raw||0,ars[vi]*cant); });
+    const gi=minP>0?ars.indexOf(minP):-1;
+    row.push(minP||0,minP*cant||0,gi>=0?provs[gi].nombre:'—');
+    rows.push(row);
+  });
+  rows.push(["","TOTAL","",...provs.flatMap(v=>["",totP[v.id]]),"",totMejor,""]);
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb,ws,"Comparativa");
+
+  // Hoja Centros de Costo — con columnas H y M
+  const ccHdr=["Centro de Costo",...S.productos.flatMap(p=>[`${p.desc} H`,`${p.desc} M`,`${p.desc} Total`]),"TOTAL"];
+  const ccRows=[ccHdr];
+  (S.centros||[]).forEach(cc=>{
+    const r=[cc.nombre];
+    let tot=0;
+    S.productos.forEach(p=>{ const v=getCC(cc,p.id); r.push(v.h,v.m,v.h+v.m); tot+=v.h+v.m; });
+    r.push(tot); ccRows.push(r);
+  });
+  const totR=["TOTAL",...S.productos.flatMap(p=>{ const th=(S.centros||[]).reduce((s,cc)=>s+getCC(cc,p.id).h,0); const tm=(S.centros||[]).reduce((s,cc)=>s+getCC(cc,p.id).m,0); return[th,tm,th+tm]; })];
+  totR.push(totR.slice(1).filter((_,i)=>(i+1)%3===0).reduce((s,v)=>s+v,0)); ccRows.push(totR);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ccRows),"Centros de Costo");
+
+  // Config
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["TC",S.config.tc],["Fecha",S.config.fecha],["Empresa",S.config.empresa]]),"Config");
+
+  XLSX.writeFile(wb,`Comparativa_${S.config.fecha||"hoy"}.xlsx`);
+  showToast("✅ Excel exportado");
+}
+
+// ── TABS & MODALS ────────────────────────────────────────────────────────
+function showTab(name,el){
+  document.querySelectorAll(".tab-content").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+  el.classList.add("active");
+}
+function closeModal(id){ document.getElementById(id).classList.remove("open"); }
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("open");}));
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+(function(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){ try{ mergeState(JSON.parse(raw)); }catch(e){ console.warn("Error al leer localStorage, usando defaults"); } }
+  document.getElementById("loading").style.display="none";
+  renderAll();
+})();
+</script>
+</body>
+</html>

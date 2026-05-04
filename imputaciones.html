@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Imputaciones de Combustible — Petromark</title>
+<link rel="icon" type="image/png" href="icon.png"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#F0F4F8;color:#222;font-size:13px}
+
+/* HEADER (mismo que comparativa) */
+.header{background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-logo{width:36px;height:36px;object-fit:contain;filter:brightness(0) invert(1) opacity(.9)}
+.header-left h1{color:#fff;font-size:18px;font-weight:700;letter-spacing:.3px}
+.header-left p{color:#7ecbdb;font-size:11px;margin-top:1px}
+.header-right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:none;border-radius:6px;padding:7px 14px;font-weight:600;cursor:pointer;font-size:12px;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-orange{background:#E65100;color:#fff}
+.btn-teal{background:#00838F;color:#fff}
+.btn-blue{background:#0f3460;color:#fff}
+.btn-green{background:#2E7D32;color:#fff}
+.btn-red{background:#C62828;color:#fff}
+.btn-ghost{background:#ffffff18;color:#fff;border:1px solid #ffffff30;font-size:11px;padding:5px 10px}
+
+/* CARDS */
+.card{background:#fff;border-radius:10px;padding:16px 20px;margin:12px 16px;box-shadow:0 1px 5px #0001}
+.card h2{font-size:13px;font-weight:700;margin-bottom:12px;color:#444;display:flex;align-items:center;gap:6px}
+
+/* TABS */
+.tabs{display:flex;gap:2px;margin:0 16px;border-bottom:2px solid #E0E0E0;flex-wrap:wrap}
+.tab{padding:9px 16px;cursor:pointer;font-size:12px;font-weight:600;color:#888;border-radius:6px 6px 0 0;transition:all .15s;border:none;background:none}
+.tab.active{background:#0f3460;color:#fff}
+.tab:hover:not(.active){background:#E3F2FD;color:#0f3460}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* STATS */
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{border-radius:8px;padding:9px 16px;text-align:center;min-width:140px;background:#E3F2FD;border:1.5px solid #1565C0}
+.stat .n{font-size:18px;font-weight:700;color:#1565C0}
+.stat .l{font-size:10px;color:#666;margin-top:1px}
+.stat.green{background:#E8F5E9;border-color:#2E7D32}.stat.green .n{color:#2E7D32}
+.stat.orange{background:#FFF3E0;border-color:#E65100}.stat.orange .n{color:#E65100}
+.stat.purple{background:#F3E5F5;border-color:#7B1FA2}.stat.purple .n{color:#7B1FA2}
+.stat.teal{background:#E0F7FA;border-color:#00838F}.stat.teal .n{color:#00838F}
+.stat.red{background:#FFEBEE;border-color:#C62828}.stat.red .n{color:#C62828}
+
+/* TABLES */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse}
+thead tr{background:#F5F5F5}
+thead th{padding:8px 10px;text-align:left;font-weight:600;color:#777;font-size:11px;border-bottom:1.5px solid #E0E0E0;white-space:nowrap}
+tbody tr{border-top:1px solid #F0F0F0}
+tbody tr:nth-child(even){background:#FAFAFA}
+tbody tr:hover{background:#EEF5FF}
+td{padding:7px 10px;vertical-align:middle}
+
+/* UPLOAD ZONE */
+.dropzone{border:2.5px dashed #C0CCDA;border-radius:14px;padding:30px;text-align:center;background:#FAFCFF;transition:all .2s;cursor:pointer}
+.dropzone:hover,.dropzone.drag{border-color:#0f3460;background:#E3F2FD}
+.dropzone-icon{font-size:36px;margin-bottom:8px}
+.dropzone-text{color:#555;font-size:14px;font-weight:600}
+.dropzone-sub{color:#888;font-size:11px;margin-top:4px}
+.dropzone input{display:none}
+
+/* ALERTS */
+.alert{border-radius:8px;padding:12px 14px;margin:10px 0;font-size:12px;display:flex;gap:10px;align-items:flex-start}
+.alert-warn{background:#FFF3E0;border:1px solid #FFCC80;color:#E65100}
+.alert-err{background:#FFEBEE;border:1px solid #FFCDD2;color:#C62828}
+.alert-info{background:#E3F2FD;border:1px solid #90CAF9;color:#0f3460}
+.alert-ok{background:#E8F5E9;border:1px solid #A5D6A7;color:#1B5E20}
+.alert .ico{font-size:18px;flex-shrink:0}
+.alert h4{font-size:12px;font-weight:700;margin-bottom:4px}
+.alert ul{margin-left:16px;margin-top:4px}
+.alert li{margin-bottom:2px}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.form-row{margin-bottom:10px}
+.form-row label{display:block;font-size:11px;font-weight:700;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.form-row input,.form-row select{width:100%;border:1px solid #ddd;border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;transition:border-color .1s}
+.form-row input:focus,.form-row select:focus{border-color:#0f3460}
+.form-row input:disabled{background:#F5F5F5;color:#999}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:#0007;z-index:100;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:22px;width:100%;max-width:680px;box-shadow:0 8px 40px #0004;max-height:92vh;overflow-y:auto}
+.modal h3{font-size:15px;margin-bottom:14px;color:#0f3460;font-weight:700}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+
+/* SEARCH BAR */
+.searchbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.searchbar input{flex:1;min-width:160px;border:1px solid #ddd;border-radius:6px;padding:7px 10px;font-size:13px;outline:none}
+.searchbar input:focus{border-color:#0f3460}
+.searchbar select{border:1px solid #ddd;border-radius:6px;padding:7px 10px;font-size:13px;background:#fff;outline:none}
+
+/* INLINE EDIT BUTTONS */
+.edit-btn{background:none;border:1px solid #ddd;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;color:#555;font-family:inherit}
+.edit-btn:hover{background:#f0f0f0}
+.del-btn{background:none;border:1px solid #ffcdd2;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;color:#c62828;font-family:inherit}
+.del-btn:hover{background:#ffebee}
+.hist-btn{background:none;border:1px solid #b39ddb;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;color:#5e35b1;font-family:inherit}
+.hist-btn:hover{background:#ede7f6}
+
+/* BADGES */
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700}
+.b-green{background:#C8E6C9;color:#1B5E20}
+.b-orange{background:#FFE0B2;color:#E65100}
+.b-blue{background:#BBDEFB;color:#0f3460}
+.b-red{background:#FFCDD2;color:#C62828}
+.b-purple{background:#E1BEE7;color:#6A1B9A}
+.b-gray{background:#E0E0E0;color:#555}
+
+/* FACTURA STAGE */
+.stage{padding:10px 14px;background:#E3F2FD;border-left:4px solid #0f3460;border-radius:6px;margin-bottom:14px;font-size:12px;color:#0f3460}
+
+/* PRECIOS GRID */
+.precios-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:8px 0}
+.precio-card{border:1px solid #E0E0E0;border-radius:8px;padding:10px 12px;background:#FAFAFA}
+.precio-card label{display:block;font-size:11px;font-weight:700;color:#555;margin-bottom:4px}
+.precio-card input{width:100%;border:1px solid #ddd;border-radius:5px;padding:6px 8px;font-size:13px;text-align:right;outline:none}
+.precio-card input:focus{border-color:#0f3460}
+.precio-card .meta{font-size:10px;color:#888;margin-top:3px}
+
+/* HISTORIAL TIMELINE */
+.timeline{margin:12px 0;border-left:2.5px solid #E0E0E0;padding-left:18px}
+.timeline-item{position:relative;margin-bottom:14px;padding-bottom:8px}
+.timeline-item::before{content:"";position:absolute;left:-26px;top:4px;width:12px;height:12px;border-radius:50%;background:#0f3460;border:2.5px solid #fff;box-shadow:0 0 0 2px #0f3460}
+.timeline-date{font-size:11px;color:#888;font-weight:700}
+.timeline-cc{font-size:13px;font-weight:700;color:#0f3460;margin:2px 0}
+.timeline-motivo{font-size:11px;color:#666}
+
+/* RESULTADO TABLAS */
+.res-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.res-tbl th{background:#0f3460;color:#fff;padding:7px 8px;font-weight:600;text-align:left;font-size:10.5px}
+.res-tbl td{padding:5px 8px;border-bottom:1px solid #F0F0F0}
+.res-tbl tr:nth-child(even) td{background:#FAFAFA}
+.res-tbl .num{text-align:right;font-variant-numeric:tabular-nums}
+.res-tbl tfoot td{font-weight:700;background:#E8EAF6!important;color:#0f3460;border-top:2px solid #0f3460}
+.diff-ok{color:#2E7D32;font-weight:700}
+.diff-bad{color:#C62828;font-weight:700}
+
+/* LOADING / TOAST */
+#loading{position:fixed;inset:0;background:#F0F4F8;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:300;gap:12px}
+#loading .spinner{width:36px;height:36px;border:4px solid #ddd;border-top-color:#0f3460;border-radius:50%;animation:spin .8s linear infinite}
+#loading p{color:#888;font-size:13px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1a2e;color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;opacity:0;transition:opacity .3s;z-index:200;pointer-events:none}
+.toast.show{opacity:1}
+.empty{text-align:center;color:#bbb;padding:30px;font-size:12px}
+.footer{text-align:center;color:#aaa;font-size:10px;padding:14px}
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div><p>Cargando datos...</p></div>
+
+<div class="header">
+  <div class="header-left">
+    <img src="icon.png" class="header-logo" alt="Petromark"/>
+    <div>
+      <h1>Imputaciones de Combustible</h1>
+      <p id="projSub">Petromark · Procesamiento de reportes YPF EN RUTA</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <span style="color:#7ecbdb;font-size:11px">👤 <span id="userLabel"></span></span>
+    <button class="btn btn-ghost" onclick="syncNow()">🔄 Actualizar</button>
+    <button class="btn btn-ghost" onclick="window.location.href='index.html'">← Volver</button>
+    <button class="btn btn-ghost" onclick="logout()">🚪 Salir</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('procesar',this)">📥 Procesar Reporte</button>
+  <button class="tab" onclick="showTab('moviles',this)">🚗 Móviles (INTERNO)</button>
+  <button class="tab" onclick="showTab('centros',this)">🏗️ Centros de Costo</button>
+  <button class="tab" onclick="showTab('servicios',this)">⚙️ Tipos de Servicio</button>
+  <button class="tab" onclick="showTab('articulos',this)">📦 Artículos</button>
+  <button class="tab" onclick="showTab('historial',this)">📁 Facturas Procesadas</button>
+</div>
+
+<!-- ════════════ TAB PROCESAR ════════════ -->
+<div id="tab-procesar" class="tab-content active">
+  <div class="card">
+    <h2>📥 Subir Reporte de Consumos</h2>
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+      <div class="dropzone-icon">📊</div>
+      <div class="dropzone-text">Arrastrá el archivo o hacé click para seleccionar</div>
+      <div class="dropzone-sub">Formato: ReporteConsumos.xlsx descargado de YPF EN RUTA</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="onFileSelected(event)"/>
+    </div>
+    <div id="uploadStatus"></div>
+  </div>
+
+  <div id="procesarStage" style="display:none">
+    <!-- Llenado dinámicamente -->
+  </div>
+</div>
+
+<!-- ════════════ TAB MÓVILES ════════════ -->
+<div id="tab-moviles" class="tab-content">
+  <div class="card">
+    <h2>🚗 Móviles (INTERNO) <span style="margin-left:auto" id="btnAddMovil"></span></h2>
+    <div class="searchbar">
+      <input type="text" id="movilBuscar" placeholder="🔍 Buscar por interno, dominio o CC..." oninput="renderMoviles()"/>
+      <select id="movilFiltroCC" onchange="renderMoviles()">
+        <option value="">Todos los CC</option>
+      </select>
+      <span style="color:#888;font-size:11px" id="movilCount"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:5%">#</th>
+          <th>Interno</th>
+          <th>Dominio</th>
+          <th>Centro de Costo Actual</th>
+          <th id="movilAccCol" style="width:18%">Acciones</th>
+        </tr></thead>
+        <tbody id="movilBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ TAB CENTROS DE COSTO ════════════ -->
+<div id="tab-centros" class="tab-content">
+  <div class="card">
+    <h2>🏗️ Centros de Costo <span style="margin-left:auto" id="btnAddCentro"></span></h2>
+    <p style="font-size:11px;color:#888;margin-bottom:10px">Mapeo de cada CC a su tipo de servicio y código contable. El TIPO DE SERVICIO determina la cuenta de imputación (SERV0001 a SERV0004).</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:5%">#</th>
+          <th>Código (CC)</th>
+          <th>Tipo de Servicio</th>
+          <th>Código contable</th>
+          <th id="centroAccCol" style="width:15%">Acciones</th>
+        </tr></thead>
+        <tbody id="centroBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ TAB TIPOS DE SERVICIO ════════════ -->
+<div id="tab-servicios" class="tab-content">
+  <div class="card">
+    <h2>⚙️ Tipos de Servicio <span style="margin-left:auto" id="btnAddServicio"></span></h2>
+    <p style="font-size:11px;color:#888;margin-bottom:10px">Categorías contables de imputación. Cada CC se asocia a un tipo de servicio.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:5%">#</th>
+          <th>Nombre</th>
+          <th>Código</th>
+          <th id="servAccCol" style="width:15%">Acciones</th>
+        </tr></thead>
+        <tbody id="servicioBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ TAB ARTÍCULOS ════════════ -->
+<div id="tab-articulos" class="tab-content">
+  <div class="card">
+    <h2>📦 Artículos <span style="margin-left:auto" id="btnAddArt"></span></h2>
+    <p style="font-size:11px;color:#888;margin-bottom:10px">Mapeo de productos del reporte YPF a códigos de artículo contable (CYL-xxxxx).</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:5%">#</th>
+          <th>Nombre YPF EN RUTA</th>
+          <th>Nº Artículo</th>
+          <th>Descripción</th>
+          <th id="artAccCol" style="width:15%">Acciones</th>
+        </tr></thead>
+        <tbody id="articuloBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ TAB HISTORIAL FACTURAS ════════════ -->
+<div id="tab-historial" class="tab-content">
+  <div class="card">
+    <h2>📁 Facturas Procesadas</h2>
+    <p style="font-size:11px;color:#888;margin-bottom:10px">Trazabilidad completa de cada procesamiento. Click en una factura para ver el detalle, re-exportar o eliminar.</p>
+    <div id="facturasList"><div class="empty">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- ═══ MODALS ═══════════════════════════════════════════════════ -->
+
+<!-- Modal: Móvil ABM -->
+<div class="overlay" id="modalMovil">
+  <div class="modal">
+    <h3 id="mMovilTitle">Nuevo Móvil</h3>
+    <div class="form-grid">
+      <div class="form-row"><label>Interno</label><input id="mMovilInterno" placeholder="Ej: M0000123"/></div>
+      <div class="form-row"><label>Dominio (Patente)</label><input id="mMovilDominio" placeholder="Ej: AE313TR" style="text-transform:uppercase"/></div>
+    </div>
+    <div class="form-row">
+      <label>Centro de Costo</label>
+      <select id="mMovilCC"></select>
+    </div>
+    <div class="form-row" id="mMovilMotivoBlock" style="display:none">
+      <label>Motivo del cambio (se guardará en el historial)</label>
+      <input id="mMovilMotivo" placeholder="Ej: Reasignación a obra de Añelo"/>
+    </div>
+    <input type="hidden" id="mMovilId"/>
+    <div class="modal-btns">
+      <button class="btn" style="background:#eee;color:#333" onclick="closeModal('modalMovil')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveMovil()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Historial de móvil -->
+<div class="overlay" id="modalHistMovil">
+  <div class="modal">
+    <h3 id="mHistTitle">Historial del móvil</h3>
+    <div id="mHistBody"></div>
+    <div class="modal-btns">
+      <button class="btn btn-blue" onclick="closeModal('modalHistMovil')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Centro -->
+<div class="overlay" id="modalCentro">
+  <div class="modal">
+    <h3 id="mCentroTitle">Nuevo Centro de Costo</h3>
+    <div class="form-row"><label>Código (CC)</label><input id="mCentroCodigo" placeholder="Ej: AÑ PC YPF"/></div>
+    <div class="form-row">
+      <label>Tipo de Servicio</label>
+      <select id="mCentroServicio"></select>
+    </div>
+    <div class="form-row"><label>Código contable (DIMENSIONES)</label><input id="mCentroDim" placeholder="Ej: AÑ000007"/></div>
+    <input type="hidden" id="mCentroId"/>
+    <div class="modal-btns">
+      <button class="btn" style="background:#eee;color:#333" onclick="closeModal('modalCentro')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveCentro()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Servicio -->
+<div class="overlay" id="modalServicio">
+  <div class="modal">
+    <h3 id="mServTitle">Nuevo Tipo de Servicio</h3>
+    <div class="form-row"><label>Nombre</label><input id="mServNombre" placeholder="Ej: ADMINISTRACIÓN"/></div>
+    <div class="form-row"><label>Código</label><input id="mServCodigo" placeholder="Ej: SERV0001"/></div>
+    <input type="hidden" id="mServId"/>
+    <div class="modal-btns">
+      <button class="btn" style="background:#eee;color:#333" onclick="closeModal('modalServicio')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveServicio()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Artículo -->
+<div class="overlay" id="modalArt">
+  <div class="modal">
+    <h3 id="mArtTitle">Nuevo Artículo</h3>
+    <div class="form-row"><label>Nombre en YPF EN RUTA</label><input id="mArtNombre" placeholder="Ej: INFINIA DIESEL"/></div>
+    <div class="form-row"><label>Número de artículo</label><input id="mArtNumero" placeholder="Ej: CYL-00001"/></div>
+    <div class="form-row"><label>Descripción contable</label><input id="mArtDesc" placeholder="Ej: COMB. DIESEL GENERICO"/></div>
+    <input type="hidden" id="mArtId"/>
+    <div class="modal-btns">
+      <button class="btn" style="background:#eee;color:#333" onclick="closeModal('modalArt')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveArticulo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="footer">Sincronizado con Firebase · <span id="lastSaved">—</span></div>
+
+<script>
+window.SEED = {"moviles":[{"interno":"M0000001","dominio":"AE313TR","cc":"DIRECCION"},{"interno":"M0000080","dominio":"AJS21","cc":"NQ PC OBRAS"},{"interno":"M0000114","dominio":"JZU096","cc":"CR PC PAE"},{"interno":"M0000124","dominio":"KXX973","cc":"CR PC PAE"},{"interno":"M0000133","dominio":"AJS81","cc":"NQ PC OBRAS"},{"interno":"M0000144","dominio":"LRT568","cc":"NQ PC OBRAS"},{"interno":"M0000159","dominio":"MDO273","cc":"CR PC PAE"},{"interno":"M0000160","dominio":"MFL773","cc":"NQ PC OBRAS"},{"interno":"M0000161","dominio":"MFL774","cc":"NQ PC OBRAS"},{"interno":"M0000163","dominio":"MJX508","cc":"NQ PC OBRAS"},{"interno":"M0000173","dominio":"MQE695","cc":"NQ PC OBRAS"},{"interno":"M0000188","dominio":"NSO134","cc":"CR PC PAE"},{"interno":"M0000207","dominio":"OAS856","cc":"AÑ PC YPF"},{"interno":"M0000210","dominio":"OHP600","cc":"CO ADM"},{"interno":"M0000221","dominio":"PDT262","cc":"CR PC YPF"},{"interno":"M0000223","dominio":"PGM647","cc":"NQ ADM"},{"interno":"M0000224","dominio":"PGM648","cc":"NQ ADM"},{"interno":"M0000225","dominio":"PGM649","cc":"CO ADM"},{"interno":"M0000230","dominio":"PKM062","cc":"CR BASE"},{"interno":"M0000234","dominio":"AA213XA","cc":"NQ ADM"},{"interno":"M0000235","dominio":"AA213XI","cc":"NQ ADM"},{"interno":"M0000236","dominio":"AA213XE","cc":"CO ADM"},{"interno":"M0000242","dominio":"AA372NY","cc":"CR BASE"},{"interno":"M0000248","dominio":"AA906NJ","cc":"CO ADM"},{"interno":"M0000259","dominio":"AB454DL","cc":"LH LAB YPF"},{"interno":"M0000260","dominio":"AB582GA","cc":"AÑ NOC PC YPF"},{"interno":"M0000262","dominio":"AB697IF","cc":"AÑ BASE"},{"interno":"M0000267","dominio":"AB863KY","cc":"CR END PAE"},{"interno":"M0000268","dominio":"AB930UB","cc":"AÑ NOC PC YPF"},{"interno":"M0000271","dominio":"AC137GH","cc":"CO PC YPF"},{"interno":"M0000278","dominio":"AC137GO","cc":"CO ADM"},{"interno":"M0000284","dominio":"AC463OG","cc":"CO PC YPF"},{"interno":"M0000285","dominio":"AC463OH","cc":"CO END CGC"},{"interno":"M0000289","dominio":"AC463OM","cc":"CO ADM"},{"interno":"M0000297","dominio":"AD173AB","cc":"CO ADM"},{"interno":"M0000298","dominio":"AD173AC","cc":"CO ADM"},{"interno":"M0000299","dominio":"AD173AE","cc":"CO ADM"},{"interno":"M0000300","dominio":"AD173AG","cc":"AÑ NOC PC YPF"},{"interno":"M0000301","dominio":"AD173AJ","cc":"NQ PC VAR"},{"interno":"M0000302","dominio":"AD364DI","cc":"CO ADM"},{"interno":"M0000303","dominio":"AD364DL","cc":"CO ADM"},{"interno":"M0000304","dominio":"AD364DJ","cc":"NQ ADM"},{"interno":"M0000305","dominio":"AD364DH","cc":"AÑ NOC END YPF"},{"interno":"M0000306","dominio":"AD364DD","cc":"CO ADM"},{"interno":"M0000307","dominio":"AD364DM","cc":"CO ADM"},{"interno":"M0000308","dominio":"AD364DE","cc":"AÑ NOC PC YPF"},{"interno":"M0000309","dominio":"AD364DG","cc":"AÑ NOC PC YPF"},{"interno":"M0000310","dominio":"AD364DK","cc":"AÑ NOC PC YPF"},{"interno":"M0000311","dominio":"AD364DR","cc":"AÑ NOC END YPF"},{"interno":"M0000312","dominio":"AD478CI","cc":"AÑ NOC PC YPF"},{"interno":"M0000313","dominio":"AD504FS","cc":"AÑ NOC PC YPF"},{"interno":"M0000314","dominio":"AD504FT","cc":"AÑ NOC PC YPF"},{"interno":"M0000316","dominio":"AD504FV","cc":"AÑ NOC END YPF"},{"interno":"M0000317","dominio":"AD504FW","cc":"AÑ NOC PC YPF"},{"interno":"M0000318","dominio":"AD504FX","cc":"AÑ NOC PC YPF"},{"interno":"M0000319","dominio":"AD504FY","cc":"AÑ NOC PC YPF"},{"interno":"M0000323","dominio":"AD616UG","cc":"CO ADM"},{"interno":"M0000324","dominio":"AD617KA","cc":"CO ADM"},{"interno":"M0000325","dominio":"AD665SZ","cc":"NQ END VAR"},{"interno":"M0000327","dominio":"AD715NB","cc":"AÑ NOC PC YPF"},{"interno":"M0000328","dominio":"AD715NC","cc":"NQ PC OBRAS"},{"interno":"M0000329","dominio":"AD768WB","cc":"CR END PAE"},{"interno":"M0000330","dominio":"AD768WC","cc":"LH PC YPF"},{"interno":"M0000331","dominio":"AD715NV","cc":"GERENCIA END"},{"interno":"M0000332","dominio":"ADS206","cc":"NQ END ILAP"},{"interno":"M0000333","dominio":"AD823JF","cc":"CO END CGC"},{"interno":"M0000334","dominio":"AD817PY","cc":"CO END CGC"},{"interno":"M0000335","dominio":"AD817PZ","cc":"CO END CGC"},{"interno":"M0000339","dominio":"AD906CE","cc":"AÑ NOC PC YPF"},{"interno":"M0000340","dominio":"AD906CF","cc":"AÑ NOC END YPF"},{"interno":"M0000341","dominio":"AD906CG","cc":"AÑ NOC END YPF"},{"interno":"M0000342","dominio":"AD906CH","cc":"LH PC YPF"},{"interno":"M0000344","dominio":"AD906CJ","cc":"AÑ END YPF"},{"interno":"M0000345","dominio":"AD906CK","cc":"AÑ PC YPF"},{"interno":"M0000346","dominio":"AD978HE","cc":"CR END PAE"},{"interno":"M0000347","dominio":"AD978HF","cc":"CR END PAE"},{"interno":"M0000348","dominio":"AD978HG","cc":"CR END PAE"},{"interno":"M0000349","dominio":"AD978HH","cc":"LH LAB YPF"},{"interno":"M0000350","dominio":"AD978HI","cc":"CR PC PAE"},{"interno":"M0000351","dominio":"AD978HJ","cc":"CO PC CGC"},{"interno":"M0000352","dominio":"AE089RF","cc":"DIRECCION"},{"interno":"M0000353","dominio":"AE163UH","cc":"CO PC CGC"},{"interno":"M0000354","dominio":"AE163UI","cc":"CO PC CGC"},{"interno":"M0000355","dominio":"AE163UL","cc":"CR PC YPF"},{"interno":"M0000356","dominio":"AE163UM","cc":"LH LAB YPF"},{"interno":"M0000357","dominio":"AE163UO","cc":"LH PC YPF"},{"interno":"M0000358","dominio":"AE163UP","cc":"CR PC YPF"},{"interno":"M0000359","dominio":"AE163UQ","cc":"AÑ END YPF"},{"interno":"M0000360","dominio":"AE163UR","cc":"AÑ NOC END YPF"},{"interno":"M0000361","dominio":"AE163US","cc":"CO ADM"},{"interno":"M0000362","dominio":"AE163UT","cc":"NQ PC VAR"},{"interno":"M0000363","dominio":"AE425VN","cc":"NQ PC OBRAS"},{"interno":"M0000364","dominio":"A116CIJ","cc":"DIR G."},{"interno":"M0000365","dominio":"AE660HW","cc":"DIRECCION"},{"interno":"M0000366","dominio":"AF001VU","cc":"NQ END ILAP"},{"interno":"M0000367","dominio":"AF160IM","cc":"AÑ END YPF"},{"interno":"M0000368","dominio":"AF160IN","cc":"AÑ PC YPF"},{"interno":"M0000369","dominio":"AF160IO","cc":"NQ PC OBRAS"},{"interno":"M0000370","dominio":"AF160IP","cc":"AÑ NOC END YPF"},{"interno":"M0000371","dominio":"AF160IT","cc":"GERENCIA END"},{"interno":"M0000372","dominio":"AF256OJ","cc":"DIRECCION"},{"interno":"M0000373","dominio":"AF256OU","cc":"GERENCIA PC"},{"interno":"M0000374","dominio":"AF256OV","cc":"NQ ADM"},{"interno":"M0000375","dominio":"AF256OW","cc":"CR END PAE"},{"interno":"M0000376","dominio":"AF256OX","cc":"CR END PAE"},{"interno":"M0000377","dominio":"AF256OY","cc":"CR END PAE"},{"interno":"M0000378","dominio":"AF256OZ","cc":"CR END PAE"},{"interno":"M0000379","dominio":"AF323KA","cc":"AÑ END YPF"},{"interno":"M0000380","dominio":"AF323KB","cc":"LH LAB YPF"},{"interno":"M0000381","dominio":"AF361FB","cc":"AÑ END YPF"},{"interno":"M0000382","dominio":"AF361FC","cc":"AÑ NOC PC YPF"},{"interno":"M0000383","dominio":"AF361FD","cc":"AÑ PC YPF"},{"interno":"M0000384","dominio":"AF361FE","cc":"AÑ NOC PC YPF"},{"interno":"M0000385","dominio":"AF361FF","cc":"NQ PC OLD"},{"interno":"M0000386","dominio":"AF361FG","cc":"NQ ADM"},{"interno":"M0000387","dominio":"AF361FH","cc":"NQ END ILAP"},{"interno":"M0000388","dominio":"AF361FP","cc":"AÑ PC YPF"},{"interno":"M0000389","dominio":"AF361FI","cc":"CR END PAE"},{"interno":"M0000390","dominio":"AF361FJ","cc":"CR END PAE"},{"interno":"M0000391","dominio":"AF365NG","cc":"CR END PAE"},{"interno":"M0000392","dominio":"AF365NH","cc":"CR END PAE"},{"interno":"M0000393","dominio":"AF365NI","cc":"CR END PAE"},{"interno":"M0000394","dominio":"AF448VD","cc":"NQ COR PAE"},{"interno":"M0000395","dominio":"AF489WH","cc":"NQ END VAR"},{"interno":"M0000396","dominio":"AF489WI","cc":"AÑ END YPF"},{"interno":"M0000397","dominio":"AF489WJ","cc":"AÑ NOC END YPF"},{"interno":"M0000398","dominio":"AF489WK","cc":"AÑ END YPF"},{"interno":"M0000399","dominio":"AF489WL","cc":"LH LAB YPF"},{"interno":"M0000400","dominio":"AF489WM","cc":"CR END PAE"},{"interno":"M0000401","dominio":"AF489WN","cc":"CR END PAE"},{"interno":"M0000402","dominio":"AF489WO","cc":"CR END PAE"},{"interno":"M0000403","dominio":"AF489WY","cc":"LH PC YPF"},{"interno":"M0000404","dominio":"AF526WA","cc":"CO END CGC"},{"interno":"M0000405","dominio":"AF526WO","cc":"NQ END VAR"},{"interno":"M0000406","dominio":"AF581OK","cc":"AÑ NOC END YPF"},{"interno":"M0000407","dominio":"AF581OL","cc":"NQ PC OBRAS"},{"interno":"M0000408","dominio":"AF581OO","cc":"AÑ NOC PC YPF"},{"interno":"M0000409","dominio":"AF615AG","cc":"LH LAB YPF"},{"interno":"M0000410","dominio":"AF615AH","cc":"LH LAB YPF"},{"interno":"M0000411","dominio":"AF615AI","cc":"LH PC YPF"},{"interno":"M0000413","dominio":"AF633YR","cc":"NQ PC OBRAS"},{"interno":"M0000414","dominio":"AF633YS","cc":"LH PC YPF"},{"interno":"M0000412","dominio":"AF633YQ","cc":"AÑ NOC PC YPF"},{"interno":"M0000415","dominio":"AF633YT","cc":"AÑ NOC END YPF"},{"interno":"M0000416","dominio":"AF633YV","cc":"LH LAB YPF"},{"interno":"M0000417","dominio":"AF633YW","cc":"CR END PAE"},{"interno":"M0000418","dominio":"AF698CQ","cc":"CR PC PAE"},{"interno":"M0000419","dominio":"AF698CO","cc":"CO PC YPF"},{"interno":"M0000420","dominio":"AF698CP","cc":"CR PC YPF"},{"interno":"M0000421","dominio":"AF698CR","cc":"CO PC YPF"},{"interno":"M0000422","dominio":"AF869OK","cc":"AÑ PC YPF"},{"interno":"M0000423","dominio":"AF940BF","cc":"AÑ END YPF"},{"interno":"M0000424","dominio":"AF940BH","cc":"AÑ NOC END YPF"},{"interno":"M0000425","dominio":"AF940BY","cc":"AÑ NOC END YPF"},{"interno":"M0000426","dominio":"AF940BZ","cc":"AÑ NOC PC YPF"},{"interno":"M0000427","dominio":"AF953GL","cc":"CR END PAE"},{"interno":"M0000428","dominio":"AF953GR","cc":"NQ END VAR"},{"interno":"M0000429","dominio":"AF953GS","cc":"AÑ NOC PC YPF"},{"interno":"M0000430","dominio":"AF953GT","cc":"NQ END VAR"},{"interno":"M0000431","dominio":"AF953GU","cc":"AÑ PC YPF"},{"interno":"M0000432","dominio":"AF953GV","cc":"CR END PAE"},{"interno":"M0000433","dominio":"AF953GW","cc":"NQ END ILAP"},{"interno":"M0000434","dominio":"AG088XB","cc":"CR END PAE"},{"interno":"M0000435","dominio":"EQO59","cc":"AÑ NOC PC YPF"},{"interno":"M0000436","dominio":"AG056UF","cc":"CR PC YPF"},{"interno":"M0000437","dominio":"AG056UG","cc":"CR END PAE"},{"interno":"M0000438","dominio":"AG056UH","cc":"AÑ END YPF"},{"interno":"M0000439","dominio":"AG056UJ","cc":"CR END PAE"},{"interno":"M0000440","dominio":"AG162RE","cc":"CR PC PAE"},{"interno":"M0000441","dominio":"AG162RH","cc":"LH LAB YPF"},{"interno":"M0000442","dominio":"AG213KF","cc":"CO PC CGC"},{"interno":"M0000443","dominio":"AG213KH","cc":"CO PC CGC"},{"interno":"M0000444","dominio":"AG240GO","cc":"LH LAB YPF"},{"interno":"M0000445","dominio":"AG254PE","cc":"AÑ PC YPF"},{"interno":"M0000446","dominio":"AG251IA","cc":"NQ PC VAR"},{"interno":"M0000447","dominio":"AG251IB","cc":"NQ END VAR"},{"interno":"M0000448","dominio":"AG251IC","cc":"NQ END VAR"},{"interno":"M0000449","dominio":"EWR23","cc":"AÑ NOC PC YPF"},{"interno":"M0000450","dominio":"A206PCC","cc":"DIR G."},{"interno":"M0000451","dominio":"AG610OC","cc":"AÑ NOC PC YPF"},{"interno":"M0000452","dominio":"AG610OD","cc":"AÑ NOC END YPF"},{"interno":"M0000453","dominio":"AG610OE","cc":"AÑ PC YPF"},{"interno":"M0000454","dominio":"AG610OF","cc":"AÑ NOC END YPF"},{"interno":"M0000455","dominio":"AG610OG","cc":"AÑ NOC END YPF"},{"interno":"M0000456","dominio":"AG610OI","cc":"NQ END VAR"},{"interno":"M0000457","dominio":"AG610OJ","cc":"AÑ NOC PC YPF"},{"interno":"M0000458","dominio":"AG610OK","cc":"AÑ NOC PC YPF"},{"interno":"M0000459","dominio":"AG610OL","cc":"AÑ END YPF"},{"interno":"M0000460","dominio":"AG798TQ","cc":"DIR G."},{"interno":"M0000462","dominio":"AG861UN","cc":"CO ADM"},{"interno":"M0000463","dominio":"AG937NM","cc":"DIR G."},{"interno":"M0000464","dominio":"AG983TD","cc":"NQ END ILAP"},{"interno":"M0000465","dominio":"AG983TX","cc":"NQ END VAR"},{"interno":"M0000466","dominio":"AG982RS","cc":"CR END PAE"},{"interno":"M0000467","dominio":"AH063GQ","cc":"AÑ NOC END YPF"},{"interno":"M0000468","dominio":"AG982RV","cc":"CR PC YPF"},{"interno":"M0000469","dominio":"AG982RZ","cc":"CR PC PAE"},{"interno":"M0000470","dominio":"AH063GP","cc":"NQ PC VAR"},{"interno":"M0000471","dominio":"AH063GO","cc":"CR END PAE"},{"interno":"M0000472","dominio":"AH063GM","cc":"CR END PAE"},{"interno":"M0000473","dominio":"AG982RU","cc":"CR END PAE"},{"interno":"M0000474","dominio":"AG982RW","cc":"CO ADM"},{"interno":"M0000475","dominio":"AG982RT","cc":"CO ADM"},{"interno":"M0000476","dominio":"AG982RX","cc":"CR END PAE"},{"interno":"M0000477","dominio":"AG982RY","cc":"CR PC YPF"},{"interno":"M0000478","dominio":"AH007CW","cc":"AÑ PC YPF"},{"interno":"M0000479","dominio":"AH037WN","cc":"AÑ PC YPF"},{"interno":"M0000480","dominio":"AH036PZ","cc":"NQ END VAR"},{"interno":"M0000481","dominio":"AH037WL","cc":"AÑ END YPF"},{"interno":"M0000482","dominio":"AH007CX","cc":"AÑ NOC PC YPF"},{"interno":"M0000483","dominio":"AH037WU","cc":"NQ COR PAE"},{"interno":"M0000484","dominio":"AH007CV","cc":"AÑ NOC PC YPF"},{"interno":"M0000485","dominio":"AH036QA","cc":"AÑ END YPF"},{"interno":"M0000486","dominio":"AH007CZ","cc":"AÑ PC YPF"},{"interno":"M0000487","dominio":"AH037WT","cc":"AÑ PC YPF"},{"interno":"M0000488","dominio":"AH037WO","cc":"AÑ END YPF"},{"interno":"M0000489","dominio":"AH037WS","cc":"AÑ NOC PC YPF"},{"interno":"M0000490","dominio":"AH037WW","cc":"AÑ NOC PC YPF"},{"interno":"M0000491","dominio":"AH037WA","cc":"AÑ PC YPF"},{"interno":"M0000492","dominio":"AH063GN","cc":"CR END PAE"},{"interno":"M0000493","dominio":"AH047KK","cc":"AÑ NOC END YPF"},{"interno":"M0000494","dominio":"AH264KY","cc":"CO ADM"},{"interno":"M0000496","dominio":"AH466KG","cc":"NQ ADM"},{"interno":"M0000497","dominio":"A268GOJ","cc":"DIR G."},{"interno":"M0000498","dominio":"AI067GB","cc":"NQ PC VAR"},{"interno":"M0000499","dominio":"AI067GC","cc":"AÑ NOC PC YPF"},{"interno":"M0000500","dominio":"AI067GD","cc":"NQ PC VAR"},{"interno":"M0000501","dominio":"AI067GE","cc":"AÑ PC YPF"},{"interno":"M0000502","dominio":"AI067GF","cc":"AÑ PC YPF"},{"interno":"M0000503","dominio":"AI067GH","cc":"AÑ NOC END YPF"},{"interno":"M0000504","dominio":"AI067GM","cc":"AÑ PC YPF"},{"interno":"M0000505","dominio":"AI067GN","cc":"AÑ PC YPF"},{"interno":"M0000506","dominio":"AI067GO","cc":"AÑ NOC PC YPF"},{"interno":"M0000507","dominio":"AI067GQ","cc":"AÑ NOC PC YPF"},{"interno":"M0000508","dominio":"AI067GR","cc":"AÑ NOC PC YPF"},{"interno":"M0000509","dominio":"AI067GS","cc":"AÑ NOC END YPF"},{"interno":"M0000510","dominio":"AI067GT","cc":"AÑ NOC PC YPF"},{"interno":"M0000511","dominio":"AI067GU","cc":"AÑ NOC PC YPF"},{"interno":"M0000512","dominio":"AI067GV","cc":"AÑ NOC PC YPF"},{"interno":"M0000513","dominio":"AI067FK","cc":"NQ PC OBRAS"},{"interno":"M000001","dominio":"AE131TR","cc":"DIRECCION"}],"centros":[{"codigo":"CR END PAE","tipoServicio":"ENSAYOS NO DESTRUCTIVOS","codigoDim":"CR000003"},{"codigo":"CO ADM","tipoServicio":"ADMINISTRACIÓN","codigoDim":"ADM00001"},{"codigo":"NQ PC OBRAS","tipoServicio":"PROTECCION CATÓDICA","codigoDim":"NQ000010"},{"codigo":"AÑ END YPF","tipoServicio":"ENSAYOS NO DESTRUCTIVOS","codigoDim":"NQ000001"},{"codigo":"AÑ CIPS TOTAL","tipoServicio":"ENSAYOS NO DESTRUCTIVOS","codigoDim":"NQ000009"},{"codigo":"AÑ NOC END YPF","tipoServicio":"ENSAYOS NO DESTRUCTIVOS","codigoDim":"NQ000003"},{"codigo":"LH LAB YPF","tipoServicio":"LABORATORIO","codigoDim":"LH000001"},{"codigo":"AÑ PC YPF","tipoServicio":"PROTECCION CATÓDICA","codigoDim":"NQ000004"},{"codigo":"AÑ NOC PC YPF","tipoServicio":"PROTECCION CATÓDICA","codigoDim":"NQ000002"},{"codigo":"CR PC PAE","tipoServicio":"PROTECCION CATÓDICA","codigoDim":"CR000001"},{"codigo":"CO END CGC","tipoServicio":"ENSAYOS NO DESTRUCTIVOS","codigoDim":"CO000003"},{"codigo":"CO PC YPF","tipoServicio":"PROTECCION CATÓDICA","codigoDim":"CO000002"},{"codigo":"NQ COR PAE","tipoServicio":"ENSAYOS NO DESTRUCTIVOS","codigoDim":"NQ000012"},{"codigo":"NQ ADM","tipoServicio":"ADMINISTRACIÓN","codigoDim":"ADM00002"},{"codigo":"CR PC YPF","tipoServicio":"PROTECCION CATÓDICA","codigoDim":"CR000002"},{"codigo":"CO PC CGC","tipoServicio":"PROTECCION CATÓDICA","codigoDim":"CO000001"},{"codigo":"NQ END VAR","tipoServicio":"ENSAYOS NO DESTRUCTIVOS","codigoDim":"NQ000005"},{"codigo":"LH PC YPF","tipoServicio":"PROTECCION CATÓDICA","codigoDim":"LH000002"},{"codigo":"DIR G.","tipoServicio":"ADMINISTRACIÓN","codigoDim":"DIRG0000"},{"codigo":"NQ PC VAR","tipoServicio":"PROTECCION CATÓDICA","codigoDim":"NQ000011"},{"codigo":"DIRECCION","tipoServicio":"ADMINISTRACIÓN","codigoDim":"DIRM0000"},{"codigo":"CR BASE","tipoServicio":"ADMINISTRACIÓN","codigoDim":"BASE0003"},{"codigo":"GERENCIA END","tipoServicio":"ENSAYOS NO DESTRUCTIVOS","codigoDim":"GER00001"},{"codigo":"CR ECDA PAE","tipoServicio":"ENSAYOS NO DESTRUCTIVOS","codigoDim":"CR000004"},{"codigo":"GERENCIA PC","tipoServicio":"PROTECCION CATÓDICA","codigoDim":"GER00002"},{"codigo":"NQ END ILAP","tipoServicio":"ENSAYOS NO DESTRUCTIVOS","codigoDim":"NQ000007"},{"codigo":"AÑ PC TOTAL","tipoServicio":"PROTECCION CATÓDICA","codigoDim":"NQ000006"},{"codigo":"AÑ BASE","tipoServicio":"ADMINISTRACIÓN","codigoDim":"BASE0005"}],"servicios":[{"nombre":"ADMINISTRACIÓN","codigo":"SERV0001"},{"nombre":"ENSAYOS NO DESTRUCTIVOS","codigo":"SERV0002"},{"nombre":"PROTECCION CATÓDICA","codigo":"SERV0003"},{"nombre":"LABORATORIO","codigo":"SERV0004"}],"articulos":[{"nombreYPF":"INFINIA DIESEL","numero":"CYL-00001","descripcion":"COMB. DIESEL GENERICO"},{"nombreYPF":"NAFTA SUPER","numero":"CYL-00002","descripcion":"COMB. NAFTA GENERICO"},{"nombreYPF":"D.DIESEL 500","numero":"CYL-00003","descripcion":"COMB.D.DIESEL 500 B 0"},{"nombreYPF":"INFINIA","numero":"CYL-00004","descripcion":"COMB.INFINIA DIESEL B 1"},{"nombreYPF":"COMB.NAFTA INFINIA E0","numero":"CYL-00005","descripcion":"COMB.NAFTA INFINIA E 0"},{"nombreYPF":"COMB.NAFTA INFINIAE12","numero":"CYL-00006","descripcion":"COMB.NAFTA INFINIA E 12"},{"nombreYPF":"ULTRADIESEL","numero":"CYL-00007","descripcion":"COMB.ULTRADIESEL XXI B 0"},{"nombreYPF":"AZUL 32 BIDON 10 L","numero":"CYL-00011","descripcion":"AZUL 32 BIDON 10 L"},{"nombreYPF":"AZUL 32 BIDON 20 L","numero":"CYL-00012","descripcion":"AZUL 32 BIDON 20 L"},{"nombreYPF":"AZUL 32 GRANEL","numero":"CYL-00011","descripcion":"AZUL 32 GRANEL"}]};
+</script>
+
+<script>
+// ── FIREBASE ──────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:"AIzaSyBBzpQ-68qd3rz0cooyV49mD3QwbSRb9dk",
+  authDomain:"petromark-comparativa.firebaseapp.com",
+  databaseURL:"https://petromark-comparativa-default-rtdb.firebaseio.com",
+  projectId:"petromark-comparativa",
+  storageBucket:"petromark-comparativa.firebasestorage.app",
+  messagingSenderId:"328038967899",
+  appId:"1:328038967899:web:b02d42830ff5ad83aaed7e"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const yerRef      = db.ref("yer");
+const facturasRef = db.ref("yer/facturas");
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+const _session = JSON.parse(sessionStorage.getItem("cd_session")||"null");
+if(!_session){ window.location.replace("index.html"); }
+const isAdmin  = _session?.role === "editor";
+const _userName= _session?.name || "";
+
+// ── ESTADO LOCAL ──────────────────────────────────────────────────────────
+let S = {
+  moviles:    [],   // [{id,interno,dominio,cc,activo:true,historial:[{fecha,ccDesde,ccHasta,motivo,usuario}]}]
+  centros:    [],   // [{id,codigo,tipoServicio,codigoDim}]
+  servicios:  [],   // [{id,nombre,codigo}]
+  articulos:  [],   // [{id,nombreYPF,numero,descripcion}]
+};
+let firstLoad = true;
+let ignoreNext= false;
+// estado de procesamiento actual
+let parsedReport = null;        // datos crudos del xlsx
+let currentFactura = null;      // factura seleccionada
+let editingMovilOriginalCC = null;
+
+// ── SAVE / SYNC ───────────────────────────────────────────────────────────
+function saveNow(){
+  if(!isAdmin) return;
+  ignoreNext=true;
+  const payload = {
+    moviles: S.moviles,
+    centros: S.centros,
+    servicios: S.servicios,
+    articulos: S.articulos
+  };
+  yerRef.update(payload)
+    .then(()=>{ showToast("✅ Guardado"); document.getElementById("lastSaved").textContent=new Date().toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",second:"2-digit"}); })
+    .catch((e)=>{ ignoreNext=false; showToast("❌ Error: "+e.message); });
+}
+function syncNow(){
+  showToast("🔄 Sincronizando...");
+  yerRef.once("value",snap=>{ const d=snap.val(); if(d){mergeState(d);renderAll();showToast("✅ Actualizado");} });
+}
+function showToast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2400); }
+function logout(){ sessionStorage.removeItem("cd_session"); window.location.replace("index.html"); }
+
+function mergeState(d){
+  S.moviles   = d.moviles   || [];
+  S.centros   = d.centros   || [];
+  S.servicios = d.servicios || [];
+  S.articulos = d.articulos || [];
+  // garantizar historial array en cada móvil
+  S.moviles.forEach(m=>{ if(!m.historial)m.historial=[]; if(m.activo===undefined)m.activo=true; });
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+const fmt2 = n => (n===null||n===undefined||isNaN(n))?"—":Number(n).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt0 = n => (n===null||n===undefined||isNaN(n))?"—":Number(n).toLocaleString("es-AR",{maximumFractionDigits:0});
+const fmtMoney = n => "$\u202F"+fmt2(n);
+const fmtL   = n => fmt2(n)+" L";
+const norm   = s => (s||"").toString().trim().toUpperCase();
+
+const findMovil    = patente => S.moviles.find(m=>norm(m.dominio)===norm(patente)&&m.activo!==false);
+const findCentro   = codigo  => S.centros.find(c=>norm(c.codigo)===norm(codigo));
+const findServicio = nombre  => S.servicios.find(s=>norm(s.nombre)===norm(nombre));
+const findArticulo = nombreYPF => S.articulos.find(a=>norm(a.nombreYPF)===norm(nombreYPF));
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────
+function renderAll(){
+  document.getElementById("userLabel").textContent = _userName + (isAdmin?" (Editor)":" (Vista)");
+  renderMoviles(); renderCentros(); renderServicios(); renderArticulos();
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// ── PROCESAMIENTO DEL REPORTE XLSX ──
+// ════════════════════════════════════════════════════════════════════════
+
+// Drag & drop
+const dz = document.getElementById("dropzone");
+["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag");}));
+dz.addEventListener("drop",e=>{
+  const f=e.dataTransfer.files[0]; if(f)procesarArchivo(f);
+});
+
+function onFileSelected(e){
+  const f=e.target.files[0]; if(f)procesarArchivo(f);
+}
+
+async function procesarArchivo(file){
+  document.getElementById("uploadStatus").innerHTML='<div class="alert alert-info"><span class="ico">⏳</span><div>Leyendo archivo...</div></div>';
+  try {
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:"array",cellDates:true});
+    const sheetName=wb.SheetNames.find(n=>n.toLowerCase().includes("reporte")) || wb.SheetNames[0];
+    const ws=wb.Sheets[sheetName];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+    if(rows.length<2){ throw new Error("El archivo no tiene datos."); }
+    const hdr=rows[0].map(x=>(x||"").toString().trim().toUpperCase());
+    const idx={};
+    ["FECHA","CONTRATO","SUBCUENTA","IDENTIFICACION TARJETA","PRODUCTO","LITROS UNIDADES","IVA","IMP CO2","TASA VIAL","IMP COMB LIQ","FACTURA","IMP TOT YER","CONDUCTOR"].forEach(k=>{
+      idx[k]=hdr.findIndex(h=>h===k);
+    });
+    if(idx["FACTURA"]<0||idx["PRODUCTO"]<0||idx["LITROS UNIDADES"]<0||idx["IDENTIFICACION TARJETA"]<0){
+      throw new Error("Columnas requeridas no encontradas. Verificá que el archivo sea un reporte de YPF EN RUTA estándar.");
+    }
+    const lineas=[];
+    for(let i=1;i<rows.length;i++){
+      const r=rows[i];
+      if(!r[idx["FACTURA"]])continue;
+      lineas.push({
+        fecha:    r[idx["FECHA"]],
+        contrato: r[idx["CONTRATO"]],
+        subcuenta:(r[idx["SUBCUENTA"]]||"").toString().trim(),
+        patente:  (r[idx["IDENTIFICACION TARJETA"]]||"").toString().trim().toUpperCase(),
+        producto: (r[idx["PRODUCTO"]]||"").toString().trim(),
+        litros:   parseFloat(r[idx["LITROS UNIDADES"]])||0,
+        impTotYer:parseFloat(r[idx["IMP TOT YER"]])||0,
+        iva:      parseFloat(r[idx["IVA"]])||0,
+        co2:      parseFloat(r[idx["IMP CO2"]])||0,
+        tasaVial: parseFloat(r[idx["TASA VIAL"]])||0,
+        impCombLiq:parseFloat(r[idx["IMP COMB LIQ"]])||0,
+        factura:  (r[idx["FACTURA"]]||"").toString().trim(),
+        conductor:(r[idx["CONDUCTOR"]]||"").toString().trim()
+      });
+    }
+    if(!lineas.length)throw new Error("No se encontraron transacciones válidas.");
+    parsedReport={ lineas, fileName:file.name };
+    showStageInicial();
+    showToast(`✅ ${lineas.length} transacciones leídas`);
+  } catch(e){
+    document.getElementById("uploadStatus").innerHTML=`<div class="alert alert-err"><span class="ico">❌</span><div><h4>Error al leer el archivo</h4>${e.message}</div></div>`;
+  }
+}
+
+function showStageInicial(){
+  const lineas=parsedReport.lineas;
+  // facturas únicas
+  const facts=[...new Set(lineas.map(l=>l.factura))].sort();
+  // resumen general
+  const totalLts=lineas.reduce((s,l)=>s+l.litros,0);
+  const totalGravado=lineas.reduce((s,l)=>s+l.impTotYer,0);
+  const totalCO2=lineas.reduce((s,l)=>s+l.co2,0);
+  const totalTasa=lineas.reduce((s,l)=>s+l.tasaVial,0);
+  const totalCombLiq=lineas.reduce((s,l)=>s+l.impCombLiq,0);
+
+  // detección de patentes huérfanas (no están en INTERNO)
+  const patentesEnReporte=[...new Set(lineas.map(l=>l.patente).filter(Boolean))];
+  const huerfanas=patentesEnReporte.filter(p=>!findMovil(p));
+
+  // detección de inconsistencias: la subcuenta del reporte vs el CC en INTERNO
+  const inconsistencias=[];
+  patentesEnReporte.forEach(p=>{
+    const m=findMovil(p); if(!m)return;
+    const subsInReport=[...new Set(lineas.filter(l=>l.patente===p).map(l=>l.subcuenta).filter(Boolean))];
+    subsInReport.forEach(sc=>{
+      if(norm(sc)!==norm(m.cc)) inconsistencias.push({patente:p,interno:m.interno,ccInterno:m.cc,subcuentaReporte:sc});
+    });
+  });
+
+  // CC del reporte que no existen en la tabla de centros
+  const subsEnReporte=[...new Set(lineas.map(l=>l.subcuenta).filter(Boolean))];
+  const ccMissing=subsEnReporte.filter(s=>!findCentro(s));
+
+  // productos únicos
+  const productos=[...new Set(lineas.map(l=>l.producto).filter(Boolean))].sort();
+  const prodMissing=productos.filter(p=>!findArticulo(p));
+
+  // factura precargada (si ya se procesó antes)
+  const factSel=facts[0];
+  if(facts.length===1)currentFactura=factSel;
+
+  let html=`
+  <div class="card">
+    <h2>📋 Resumen del reporte</h2>
+    <div class="stats">
+      <div class="stat"><div class="n">${lineas.length}</div><div class="l">Transacciones</div></div>
+      <div class="stat green"><div class="n">${fmtL(totalLts)}</div><div class="l">Litros totales</div></div>
+      <div class="stat teal"><div class="n">${facts.length}</div><div class="l">Factura(s)</div></div>
+      <div class="stat orange"><div class="n">${patentesEnReporte.length}</div><div class="l">Patentes únicas</div></div>
+      <div class="stat purple"><div class="n">${productos.length}</div><div class="l">Productos</div></div>
+    </div>
+  </div>`;
+
+  // Alertas
+  if(huerfanas.length||ccMissing.length||prodMissing.length||inconsistencias.length){
+    html+=`<div class="card"><h2>⚠️ Validaciones previas</h2>`;
+    if(huerfanas.length){
+      html+=`<div class="alert alert-err">
+        <span class="ico">🚨</span>
+        <div style="flex:1">
+          <h4>Patentes sin móvil dado de alta (${huerfanas.length})</h4>
+          <p style="margin:4px 0 6px">No se podrán imputar correctamente. Cargalas en la pestaña <b>Móviles (INTERNO)</b> antes de procesar.</p>
+          <ul>${huerfanas.map(p=>`<li><b>${p}</b> ${(()=>{const sub=lineas.find(l=>l.patente===p)?.subcuenta;return sub?`<span class="badge b-blue">CC reporte: ${sub}</span>`:'';})()}</li>`).join("")}</ul>
+        </div>
+      </div>`;
+    }
+    if(ccMissing.length){
+      html+=`<div class="alert alert-warn">
+        <span class="ico">⚠️</span>
+        <div style="flex:1">
+          <h4>Centros de Costo del reporte no registrados (${ccMissing.length})</h4>
+          <p style="margin:4px 0">Se asignarán igual pero faltarán los códigos contables hasta que los des de alta:</p>
+          <ul>${ccMissing.map(c=>`<li><b>${c}</b></li>`).join("")}</ul>
+        </div>
+      </div>`;
+    }
+    if(prodMissing.length){
+      html+=`<div class="alert alert-warn">
+        <span class="ico">⚠️</span>
+        <div style="flex:1">
+          <h4>Productos sin código de artículo (${prodMissing.length})</h4>
+          <ul>${prodMissing.map(p=>`<li><b>${p}</b></li>`).join("")}</ul>
+        </div>
+      </div>`;
+    }
+    if(inconsistencias.length){
+      html+=`<div class="alert alert-warn">
+        <span class="ico">🔁</span>
+        <div style="flex:1">
+          <h4>Inconsistencias CC reporte ≠ CC del INTERNO (${inconsistencias.length})</h4>
+          <p style="margin:4px 0">Se imputará al CC del INTERNO. Si el cambio es real, actualizá el móvil:</p>
+          <ul>${inconsistencias.slice(0,15).map(x=>`<li><b>${x.patente}</b> (${x.interno}): INTERNO dice <span class="badge b-green">${x.ccInterno}</span> · reporte dice <span class="badge b-orange">${x.subcuentaReporte}</span></li>`).join("")}${inconsistencias.length>15?`<li>...y ${inconsistencias.length-15} más</li>`:''}</ul>
+        </div>
+      </div>`;
+    }
+    html+=`</div>`;
+  } else {
+    html+=`<div class="card"><div class="alert alert-ok"><span class="ico">✅</span><div><h4>Validaciones OK</h4>Todas las patentes, CC y productos están dados de alta.</div></div></div>`;
+  }
+
+  // Selector de factura + carga de precios
+  html+=`<div class="card">
+    <h2>💰 Cargar precios unitarios</h2>
+    <div class="form-grid" style="margin-bottom:12px">
+      <div class="form-row"><label>Factura a procesar</label>
+        <select id="selFactura" onchange="onChangeFactura()">
+          ${facts.map(f=>`<option value="${f}">${f}</option>`).join("")}
+        </select>
+      </div>
+      <div class="form-row"><label>Fecha de factura</label><input type="date" id="inpFechaFact"/></div>
+      <div class="form-row"><label>Importe Neto factura ($)</label><input type="number" step="0.01" id="inpImpNeto" placeholder="Para validar el cálculo"/></div>
+    </div>
+    <div id="preciosContainer"></div>
+    <div style="margin-top:14px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-blue" onclick="document.getElementById('procesarStage').style.display='none';parsedReport=null">Cancelar</button>
+      <button class="btn btn-green" onclick="generarImputaciones()">📊 Procesar y generar imputaciones</button>
+    </div>
+  </div>`;
+
+  // Resultado (vacío al inicio)
+  html+=`<div id="resultadoBox"></div>`;
+
+  document.getElementById("procesarStage").style.display="";
+  document.getElementById("procesarStage").innerHTML=html;
+  onChangeFactura();
+}
+
+async function onChangeFactura(){
+  const fact=document.getElementById("selFactura").value;
+  currentFactura=fact;
+  const lineas=parsedReport.lineas.filter(l=>l.factura===fact);
+  const productos=[...new Set(lineas.map(l=>l.producto).filter(Boolean))].sort();
+
+  // intentar precargar precios y fecha si ya existe en historial
+  let preExisting=null;
+  try {
+    const snap=await facturasRef.child(safeKey(fact)).once("value");
+    preExisting=snap.val();
+  } catch(e){}
+
+  if(preExisting){
+    if(preExisting.fecha)document.getElementById("inpFechaFact").value=preExisting.fecha;
+    if(preExisting.importeNeto)document.getElementById("inpImpNeto").value=preExisting.importeNeto;
+  }
+
+  // resumen por producto
+  const resumen={};
+  productos.forEach(p=>{
+    const lts=lineas.filter(l=>l.producto===p).reduce((s,l)=>s+l.litros,0);
+    resumen[p]={ lts, impYer:lineas.filter(l=>l.producto===p).reduce((s,l)=>s+l.impTotYer,0)};
+  });
+
+  let html='<div class="precios-grid">';
+  productos.forEach(p=>{
+    const art=findArticulo(p);
+    const precioPrev=preExisting?.precios?.[p]||"";
+    html+=`<div class="precio-card">
+      <label>${p} ${art?`<span class="badge b-gray" style="margin-left:4px">${art.numero}</span>`:'<span class="badge b-red" style="margin-left:4px">SIN ART.</span>'}</label>
+      <input type="number" step="0.000001" id="precio_${cssEscape(p)}" data-prod="${p}" value="${precioPrev}" placeholder="0,00"/>
+      <div class="meta">${fmtL(resumen[p].lts)} · Importe YER: ${fmtMoney(resumen[p].impYer)}</div>
+    </div>`;
+  });
+  html+='</div>';
+  html+=`<p style="font-size:11px;color:#888;margin-top:10px">💡 Los precios se toman de la factura YPF (columna VALOR UNITARIO). Si esta factura ya fue procesada, te sugiero los precios anteriores.</p>`;
+  document.getElementById("preciosContainer").innerHTML=html;
+}
+
+function cssEscape(s){ return s.replace(/[^a-zA-Z0-9]/g,"_"); }
+function safeKey(s){ return s.replace(/[.#$\[\]\/]/g,"_"); }
+
+// ── GENERAR IMPUTACIONES ─────────────────────────────────────────────────
+function generarImputaciones(){
+  if(!currentFactura){alert("Seleccioná una factura");return;}
+  // leer precios
+  const precios={};
+  document.querySelectorAll('[id^="precio_"]').forEach(inp=>{
+    const prod=inp.dataset.prod;
+    const v=parseFloat(inp.value)||0;
+    precios[prod]=v;
+  });
+  const fechaFact=document.getElementById("inpFechaFact").value;
+  const importeNeto=parseFloat(document.getElementById("inpImpNeto").value)||0;
+
+  const lineas=parsedReport.lineas.filter(l=>l.factura===currentFactura);
+
+  // ─── Agrupación: clave = producto|patente|cc(del INTERNO)
+  // (igual que tu Excel: SUMIFS por factura+producto+patente+CC)
+  const grupos={};
+  lineas.forEach(l=>{
+    const m=findMovil(l.patente);
+    const cc=m?m.cc:(l.subcuenta||"SIN_CC");
+    const key=`${l.producto}|${l.patente}|${cc}`;
+    if(!grupos[key])grupos[key]={producto:l.producto,patente:l.patente,cc,litros:0,co2:0,tasaVial:0,impCombLiq:0,interno:m?.interno||"",fueHuerfano:!m};
+    grupos[key].litros    += l.litros;
+    grupos[key].co2       += l.co2;
+    grupos[key].tasaVial  += l.tasaVial;
+    grupos[key].impCombLiq+= l.impCombLiq;
+  });
+
+  // construir filas para IVA_21 e IVA_NG
+  const rowsIVA21=[], rowsIVANG=[];
+  let totalIVA21=0, totalIVANG=0;
+  Object.values(grupos).forEach(g=>{
+    const art=findArticulo(g.producto);
+    const centro=findCentro(g.cc);
+    const servicio=centro?findServicio(centro.tipoServicio):null;
+    const precio=precios[g.producto]||0;
+    const totalIva21=g.litros*precio;
+    totalIVA21+=totalIva21;
+    rowsIVA21.push({
+      numArt: art?.numero||"NO DATA",
+      desc:   g.producto,
+      cant:   g.litros,
+      precio: precio,
+      indicador:"IVA_21",
+      total:  totalIva21,
+      tipoServ: servicio?.codigo||"NO DATA",
+      cc:     centro?.codigoDim||"NO DATA",
+      activoFijo: g.interno||"NO DATA",
+      descTipoServ: centro?.tipoServicio||"NO DATA",
+      patente: g.patente,
+      descCC: g.cc,
+      descAF: g.interno||""
+    });
+    const totalNG = g.co2 + g.tasaVial + g.impCombLiq;
+    if(totalNG>0){
+      totalIVANG+=totalNG;
+      rowsIVANG.push({
+        numArt: art?.numero||"NO DATA",
+        desc:   g.producto,
+        cant:   1,
+        precio: totalNG,
+        indicador:"IVA_NG",
+        total:  totalNG,
+        tipoServ: servicio?.codigo||"NO DATA",
+        cc:     centro?.codigoDim||"NO DATA",
+        activoFijo: g.interno||"NO DATA",
+        descTipoServ: centro?.tipoServicio||"NO DATA",
+        patente: g.patente,
+        descCC: g.cc,
+        descAF: g.interno||""
+      });
+    }
+  });
+
+  // resumen por producto (top de la hoja)
+  const resumenProductos={};
+  lineas.forEach(l=>{
+    if(!resumenProductos[l.producto])resumenProductos[l.producto]={lts:0,total:0};
+    resumenProductos[l.producto].lts+=l.litros;
+    resumenProductos[l.producto].total+=l.litros*(precios[l.producto]||0);
+  });
+
+  // totales
+  const totalCO2 = lineas.reduce((s,l)=>s+l.co2,0);
+  const totalTasaVial = lineas.reduce((s,l)=>s+l.tasaVial,0);
+  const totalCombLiq = lineas.reduce((s,l)=>s+l.impCombLiq,0);
+  const totalNG = totalCO2+totalTasaVial+totalCombLiq;
+
+  // diferencia con factura
+  const diff = importeNeto>0 ? (totalIVA21 - importeNeto) : null;
+
+  // render resultado
+  let html = `<div class="card">
+    <h2>📊 Resultado del cálculo · Factura ${currentFactura}</h2>`;
+
+  // validación cruzada
+  if(importeNeto>0){
+    const diffOk = Math.abs(diff)<5;
+    html += `<div class="alert ${diffOk?'alert-ok':'alert-err'}">
+      <span class="ico">${diffOk?'✅':'⚠️'}</span>
+      <div>
+        <h4>${diffOk?'Total cuadra con la factura':'Diferencia respecto a la factura'}</h4>
+        Calculado: <b>${fmtMoney(totalIVA21)}</b> · Factura: <b>${fmtMoney(importeNeto)}</b> ·
+        Diff: <span class="${diffOk?'diff-ok':'diff-bad'}">${fmtMoney(diff)}</span>
+        ${!diffOk?'<br/><small>Revisá los precios unitarios cargados.</small>':''}
+      </div>
+    </div>`;
+  }
+
+  // Resumen por producto (estilo IVA_21 top)
+  html += `<h3 style="font-size:12px;font-weight:700;color:#0f3460;margin:12px 0 6px">📦 Resumen por producto (gravado)</h3>
+  <div class="table-wrap"><table class="res-tbl">
+    <thead><tr><th>Producto</th><th class="num">Total Lts.</th><th class="num">Precio Unit.</th><th class="num">Total ML</th></tr></thead>
+    <tbody>`;
+  Object.entries(resumenProductos).forEach(([p,r])=>{
+    html+=`<tr><td>${p}</td><td class="num">${fmt2(r.lts)}</td><td class="num">${fmt2(precios[p]||0)}</td><td class="num">${fmtMoney(r.total)}</td></tr>`;
+  });
+  html += `</tbody>
+    <tfoot><tr><td>TOTAL NETO GRAVADO</td><td class="num">${fmt2(Object.values(resumenProductos).reduce((s,r)=>s+r.lts,0))}</td><td></td><td class="num">${fmtMoney(totalIVA21)}</td></tr></tfoot>
+  </table></div>`;
+
+  // Resumen IVA_NG
+  html += `<h3 style="font-size:12px;font-weight:700;color:#0f3460;margin:14px 0 6px">🏷️ Resumen IVA_NG (no gravado)</h3>
+  <div class="table-wrap"><table class="res-tbl">
+    <thead><tr><th>Concepto</th><th class="num">Importe</th></tr></thead>
+    <tbody>
+      <tr><td>IMP CO2</td><td class="num">${fmtMoney(totalCO2)}</td></tr>
+      <tr><td>TASA VIAL</td><td class="num">${fmtMoney(totalTasaVial)}</td></tr>
+      <tr><td>IMP COMB LIQ</td><td class="num">${fmtMoney(totalCombLiq)}</td></tr>
+    </tbody>
+    <tfoot><tr><td>TOTAL NO GRAVADO</td><td class="num">${fmtMoney(totalNG)}</td></tr></tfoot>
+  </table></div>`;
+
+  // Detalle IVA_21
+  html += `<h3 style="font-size:12px;font-weight:700;color:#0f3460;margin:18px 0 6px">📋 Detalle IVA_21 (gravado) — ${rowsIVA21.length} filas</h3>
+  <div class="table-wrap"><table class="res-tbl">
+    <thead><tr>
+      <th>Nº Art.</th><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th>Ind.</th><th class="num">Total</th>
+      <th>Tipo Serv.</th><th>CC</th><th>A. Fijo</th><th>Patente</th><th>Desc. CC</th>
+    </tr></thead>
+    <tbody>`;
+  rowsIVA21.forEach(r=>{
+    html+=`<tr>
+      <td>${r.numArt}</td><td>${r.desc}</td>
+      <td class="num">${fmt2(r.cant)}</td><td class="num">${fmt2(r.precio)}</td>
+      <td>${r.indicador}</td><td class="num">${fmtMoney(r.total)}</td>
+      <td>${r.tipoServ}</td><td>${r.cc}</td><td>${r.activoFijo}</td>
+      <td>${r.patente}</td><td>${r.descCC}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+
+  // Detalle IVA_NG
+  html += `<h3 style="font-size:12px;font-weight:700;color:#0f3460;margin:18px 0 6px">📋 Detalle IVA_NG — ${rowsIVANG.length} filas</h3>
+  <div class="table-wrap"><table class="res-tbl">
+    <thead><tr>
+      <th>Nº Art.</th><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th>Ind.</th><th class="num">Total</th>
+      <th>Tipo Serv.</th><th>CC</th><th>A. Fijo</th><th>Patente</th><th>Desc. CC</th>
+    </tr></thead>
+    <tbody>`;
+  rowsIVANG.forEach(r=>{
+    html+=`<tr>
+      <td>${r.numArt}</td><td>${r.desc}</td>
+      <td class="num">${fmt2(r.cant)}</td><td class="num">${fmt2(r.precio)}</td>
+      <td>${r.indicador}</td><td class="num">${fmtMoney(r.total)}</td>
+      <td>${r.tipoServ}</td><td>${r.cc}</td><td>${r.activoFijo}</td>
+      <td>${r.patente}</td><td>${r.descCC}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+
+  html += `<div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+    <button class="btn btn-teal" onclick="exportarExcel()">⬇ Exportar Excel (RESUMEN IVA_21 + IVA_NG)</button>
+    ${isAdmin?`<button class="btn btn-green" onclick="guardarFactura()">💾 Guardar factura procesada</button>`:''}
+  </div>`;
+  html += `</div>`;
+
+  document.getElementById("resultadoBox").innerHTML=html;
+  document.getElementById("resultadoBox").scrollIntoView({behavior:"smooth"});
+
+  // guardar en variable local para export/save
+  window._lastResult = {
+    factura: currentFactura, fecha: fechaFact, importeNeto, precios,
+    resumenProductos, totalIVA21, totalCO2, totalTasaVial, totalCombLiq, totalNG,
+    rowsIVA21, rowsIVANG
+  };
+}
+
+// ── EXPORT EXCEL ──────────────────────────────────────────────────────────
+function exportarExcel(){
+  const r = window._lastResult; if(!r){alert("Generá primero las imputaciones");return;}
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: RESUMEN IVA_21
+  const s1 = [
+    ["FACTURA", r.factura],
+    [],
+    ["", "", "", "PRODUCTOS", "Total de Lts. Por Factura", "Total (ML). Por Factura"]
+  ];
+  const productos = Object.entries(r.resumenProductos);
+  productos.forEach(([p, x])=>{
+    s1.push(["", "", "", p, x.lts, x.total]);
+  });
+  s1.push([]);
+  s1.push(["TOTAL LTS.", productos.reduce((s,[,x])=>s+x.lts,0)]);
+  s1.push(["TOTAL NETO GRAVADO", r.totalIVA21]);
+  s1.push([]);
+  s1.push(["Número de artículo","Descripción del artículo","Cantidad","Precio por unidad","Indicador de impuestos","Total (ML)","","TIPO DE SERVICIO","CENTRO DE COSTO","ACTIVO FIJO","Desc. TIPO DE SERVICIO","PATENTE","Desc. CENTRO DE COSTO","Desc. ACTIVO FIJO"]);
+  r.rowsIVA21.forEach(row=>{
+    s1.push([row.numArt,row.desc,row.cant,row.precio,row.indicador,row.total,"",row.tipoServ,row.cc,row.activoFijo,row.descTipoServ,row.patente,row.descCC,row.descAF]);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s1), "RESUMEN IVA_21");
+
+  // Sheet 2: RESUMEN IVA_NG
+  const s2 = [
+    ["FACTURA", r.factura],
+    [],
+    ["IMP CO2", r.totalCO2],
+    ["TASA VIAL", r.totalTasaVial],
+    ["IMP COMB LIQ", r.totalCombLiq],
+    ["TOTAL", r.totalNG],
+    [],
+    ["Número de artículo","Descripción del artículo","Cantidad","Precio por unidad","Indicador de impuestos","Total (ML)","","TIPO DE SERVICIO","CENTRO DE COSTO","ACTIVO FIJO","Desc. TIPO DE SERVICIO","PATENTE","Desc. CENTRO DE COSTO","Desc. ACTIVO FIJO"]
+  ];
+  r.rowsIVANG.forEach(row=>{
+    s2.push([row.numArt,row.desc,row.cant,row.precio,row.indicador,row.total,"",row.tipoServ,row.cc,row.activoFijo,row.descTipoServ,row.patente,row.descCC,row.descAF]);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s2), "RESUMEN IVA_NG");
+
+  XLSX.writeFile(wb, `Imputaciones_${r.factura}_${r.fecha||'hoy'}.xlsx`);
+  showToast("✅ Excel exportado");
+}
+
+// ── GUARDAR EN HISTORIAL ──────────────────────────────────────────────────
+function guardarFactura(){
+  const r=window._lastResult; if(!r){alert("Generá primero las imputaciones");return;}
+  const data = {
+    factura: r.factura,
+    fecha: r.fecha||"",
+    importeNeto: r.importeNeto||0,
+    precios: r.precios,
+    totalIVA21: r.totalIVA21,
+    totalCO2: r.totalCO2,
+    totalTasaVial: r.totalTasaVial,
+    totalCombLiq: r.totalCombLiq,
+    totalNG: r.totalNG,
+    rowsIVA21: r.rowsIVA21,
+    rowsIVANG: r.rowsIVANG,
+    procesadoEn: new Date().toISOString(),
+    procesadoPor: _userName
+  };
+  facturasRef.child(safeKey(r.factura)).set(data)
+    .then(()=>{ showToast("✅ Factura guardada en el historial"); })
+    .catch(e=>{ showToast("❌ Error: "+e.message); });
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// ── ABM MÓVILES ──
+// ════════════════════════════════════════════════════════════════════════
+function renderMoviles(){
+  document.getElementById("btnAddMovil").innerHTML=isAdmin?`<button class="btn btn-orange" onclick="openModalMovil()">＋ Agregar móvil</button>`:"";
+  document.getElementById("movilAccCol").style.display=isAdmin?"":"none";
+
+  // poblar filtro CC
+  const filtroSel=document.getElementById("movilFiltroCC");
+  const ccs=[...new Set(S.moviles.map(m=>m.cc).filter(Boolean))].sort();
+  const cur=filtroSel.value;
+  filtroSel.innerHTML='<option value="">Todos los CC</option>'+ccs.map(c=>`<option value="${c}">${c}</option>`).join("");
+  filtroSel.value=cur;
+
+  const q=document.getElementById("movilBuscar").value.trim().toUpperCase();
+  const filtroCC=filtroSel.value;
+  let lista=S.moviles.slice().sort((a,b)=>(a.interno||"").localeCompare(b.interno||""));
+  if(q)lista=lista.filter(m=>norm(m.interno).includes(q)||norm(m.dominio).includes(q)||norm(m.cc).includes(q));
+  if(filtroCC)lista=lista.filter(m=>m.cc===filtroCC);
+
+  document.getElementById("movilCount").textContent=`${lista.length} de ${S.moviles.length} móviles`;
+
+  document.getElementById("movilBody").innerHTML=lista.map((m,i)=>{
+    const histLen=(m.historial||[]).length;
+    return `<tr>
+      <td style="color:#bbb;font-size:11px">${i+1}</td>
+      <td><b>${m.interno}</b></td>
+      <td><span class="badge b-blue">${m.dominio}</span></td>
+      <td>${m.cc||'<span style="color:#bbb">—</span>'}</td>
+      ${isAdmin?`<td>
+        <button class="edit-btn" onclick="openModalMovil('${m.id}')">✏️</button>
+        <button class="hist-btn" onclick="verHistorialMovil('${m.id}')">🕐 ${histLen>0?histLen:''}</button>
+        <button class="del-btn" onclick="delMovil('${m.id}')">🗑</button>
+      </td>`:''}
+    </tr>`;
+  }).join("")||'<tr><td colspan="5" class="empty">Sin móviles</td></tr>';
+}
+
+function openModalMovil(id){
+  const m=id?S.moviles.find(x=>x.id===id):null;
+  document.getElementById("mMovilTitle").textContent=m?"Editar Móvil":"Nuevo Móvil";
+  document.getElementById("mMovilInterno").value=m?.interno||"";
+  document.getElementById("mMovilDominio").value=m?.dominio||"";
+  document.getElementById("mMovilId").value=id||"";
+  // poblar selector de CC
+  const sel=document.getElementById("mMovilCC");
+  const ccs=S.centros.map(c=>c.codigo).sort();
+  sel.innerHTML='<option value="">— Sin asignar —</option>'+ccs.map(c=>`<option value="${c}">${c}</option>`).join("");
+  sel.value=m?.cc||"";
+  editingMovilOriginalCC = m?.cc||"";
+  // motivo solo si edito un móvil existente y CC va a cambiar
+  document.getElementById("mMovilMotivoBlock").style.display="none";
+  document.getElementById("mMovilMotivo").value="";
+  if(m){
+    sel.onchange=()=>{
+      const willChange = sel.value!==editingMovilOriginalCC;
+      document.getElementById("mMovilMotivoBlock").style.display=willChange?"":"none";
+    };
+  } else {
+    sel.onchange=null;
+  }
+  document.getElementById("modalMovil").classList.add("open");
+}
+
+function saveMovil(){
+  const interno=document.getElementById("mMovilInterno").value.trim();
+  const dominio=document.getElementById("mMovilDominio").value.trim().toUpperCase();
+  if(!interno||!dominio){alert("Interno y Dominio son obligatorios");return;}
+  const cc=document.getElementById("mMovilCC").value;
+  const id=document.getElementById("mMovilId").value;
+  const motivo=document.getElementById("mMovilMotivo").value.trim();
+  if(id){
+    const m=S.moviles.find(x=>x.id===id);
+    const ccPrevio=m.cc||"";
+    if(cc!==ccPrevio){
+      // exigir motivo
+      if(!motivo){alert("Por favor indicá el motivo del cambio de CC para registrarlo en el historial.");return;}
+      if(!m.historial)m.historial=[];
+      m.historial.push({
+        fecha: new Date().toISOString(),
+        ccDesde: ccPrevio,
+        ccHasta: cc,
+        motivo: motivo,
+        usuario: _userName
+      });
+    }
+    m.interno=interno; m.dominio=dominio; m.cc=cc;
+  } else {
+    // duplicate check
+    if(S.moviles.find(x=>norm(x.dominio)===norm(dominio))){
+      alert("Ya existe un móvil con ese dominio");return;
+    }
+    S.moviles.push({
+      id:"M"+Date.now().toString(36),
+      interno, dominio, cc,
+      activo:true,
+      historial:[{
+        fecha: new Date().toISOString(),
+        ccDesde: "",
+        ccHasta: cc,
+        motivo: motivo||"Alta inicial",
+        usuario: _userName
+      }]
+    });
+  }
+  saveNow(); closeModal("modalMovil"); renderMoviles();
+}
+
+function delMovil(id){
+  const m=S.moviles.find(x=>x.id===id);
+  if(!confirm(`¿Eliminar el móvil ${m.interno} (${m.dominio})?\nSe perderá su historial. Considerá darlo de baja en su lugar.`))return;
+  S.moviles=S.moviles.filter(x=>x.id!==id);
+  saveNow(); renderMoviles();
+}
+
+function verHistorialMovil(id){
+  const m=S.moviles.find(x=>x.id===id); if(!m)return;
+  document.getElementById("mHistTitle").textContent=`Historial — ${m.interno} (${m.dominio})`;
+  const hist=(m.historial||[]).slice().sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
+  if(!hist.length){
+    document.getElementById("mHistBody").innerHTML='<div class="empty">Sin movimientos registrados</div>';
+  } else {
+    document.getElementById("mHistBody").innerHTML='<div class="timeline">'+hist.map(h=>{
+      const fechaTxt=h.fecha?new Date(h.fecha).toLocaleString("es-AR",{dateStyle:"medium",timeStyle:"short"}):"—";
+      return `<div class="timeline-item">
+        <div class="timeline-date">📅 ${fechaTxt} ${h.usuario?`· por ${h.usuario}`:''}</div>
+        <div class="timeline-cc">${h.ccDesde?`<span style="color:#888">${h.ccDesde}</span> →`:''} ${h.ccHasta||"<i>sin asignar</i>"}</div>
+        <div class="timeline-motivo">${h.motivo||"<i>sin motivo</i>"}</div>
+      </div>`;
+    }).join("")+'</div>';
+  }
+  document.getElementById("modalHistMovil").classList.add("open");
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// ── ABM CENTROS DE COSTO ──
+// ════════════════════════════════════════════════════════════════════════
+function renderCentros(){
+  document.getElementById("btnAddCentro").innerHTML=isAdmin?`<button class="btn btn-orange" onclick="openModalCentro()">＋ Agregar CC</button>`:"";
+  document.getElementById("centroAccCol").style.display=isAdmin?"":"none";
+
+  const lista=S.centros.slice().sort((a,b)=>a.codigo.localeCompare(b.codigo));
+  document.getElementById("centroBody").innerHTML=lista.map((c,i)=>`<tr>
+    <td style="color:#bbb;font-size:11px">${i+1}</td>
+    <td><b>${c.codigo}</b></td>
+    <td>${c.tipoServicio||'<span style="color:#bbb">—</span>'}</td>
+    <td><span class="badge b-purple">${c.codigoDim||'—'}</span></td>
+    ${isAdmin?`<td>
+      <button class="edit-btn" onclick="openModalCentro('${c.id}')">✏️</button>
+      <button class="del-btn" onclick="delCentro('${c.id}')">🗑</button>
+    </td>`:''}
+  </tr>`).join("")||'<tr><td colspan="5" class="empty">Sin centros</td></tr>';
+}
+
+function openModalCentro(id){
+  const c=id?S.centros.find(x=>x.id===id):null;
+  document.getElementById("mCentroTitle").textContent=c?"Editar Centro":"Nuevo Centro de Costo";
+  document.getElementById("mCentroCodigo").value=c?.codigo||"";
+  document.getElementById("mCentroDim").value=c?.codigoDim||"";
+  const sel=document.getElementById("mCentroServicio");
+  sel.innerHTML='<option value="">— Sin asignar —</option>'+S.servicios.map(s=>`<option value="${s.nombre}">${s.nombre} (${s.codigo})</option>`).join("");
+  sel.value=c?.tipoServicio||"";
+  document.getElementById("mCentroId").value=id||"";
+  document.getElementById("modalCentro").classList.add("open");
+}
+
+function saveCentro(){
+  const codigo=document.getElementById("mCentroCodigo").value.trim();
+  if(!codigo){alert("El código es obligatorio");return;}
+  const data={
+    codigo,
+    tipoServicio:document.getElementById("mCentroServicio").value,
+    codigoDim:document.getElementById("mCentroDim").value.trim()
+  };
+  const id=document.getElementById("mCentroId").value;
+  if(id){ Object.assign(S.centros.find(x=>x.id===id),data); }
+  else  { S.centros.push({id:"C"+Date.now().toString(36),...data}); }
+  saveNow(); closeModal("modalCentro"); renderCentros();
+}
+function delCentro(id){
+  const c=S.centros.find(x=>x.id===id);
+  const enUso=S.moviles.filter(m=>m.cc===c.codigo).length;
+  if(enUso&&!confirm(`Hay ${enUso} móviles asignados a "${c.codigo}". ¿Eliminar igual?`))return;
+  if(!enUso&&!confirm(`¿Eliminar el centro "${c.codigo}"?`))return;
+  S.centros=S.centros.filter(x=>x.id!==id);
+  saveNow(); renderCentros();
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// ── ABM TIPOS DE SERVICIO ──
+// ════════════════════════════════════════════════════════════════════════
+function renderServicios(){
+  document.getElementById("btnAddServicio").innerHTML=isAdmin?`<button class="btn btn-orange" onclick="openModalServicio()">＋ Agregar</button>`:"";
+  document.getElementById("servAccCol").style.display=isAdmin?"":"none";
+  const lista=S.servicios.slice().sort((a,b)=>(a.codigo||"").localeCompare(b.codigo||""));
+  document.getElementById("servicioBody").innerHTML=lista.map((s,i)=>`<tr>
+    <td style="color:#bbb;font-size:11px">${i+1}</td>
+    <td><b>${s.nombre}</b></td>
+    <td><span class="badge b-purple">${s.codigo}</span></td>
+    ${isAdmin?`<td>
+      <button class="edit-btn" onclick="openModalServicio('${s.id}')">✏️</button>
+      <button class="del-btn" onclick="delServicio('${s.id}')">🗑</button>
+    </td>`:''}
+  </tr>`).join("")||'<tr><td colspan="4" class="empty">Sin servicios</td></tr>';
+}
+function openModalServicio(id){
+  const s=id?S.servicios.find(x=>x.id===id):null;
+  document.getElementById("mServTitle").textContent=s?"Editar Servicio":"Nuevo Tipo de Servicio";
+  document.getElementById("mServNombre").value=s?.nombre||"";
+  document.getElementById("mServCodigo").value=s?.codigo||"";
+  document.getElementById("mServId").value=id||"";
+  document.getElementById("modalServicio").classList.add("open");
+}
+function saveServicio(){
+  const nombre=document.getElementById("mServNombre").value.trim();
+  const codigo=document.getElementById("mServCodigo").value.trim();
+  if(!nombre||!codigo){alert("Nombre y código obligatorios");return;}
+  const id=document.getElementById("mServId").value;
+  if(id){ Object.assign(S.servicios.find(x=>x.id===id),{nombre,codigo}); }
+  else  { S.servicios.push({id:"S"+Date.now().toString(36),nombre,codigo}); }
+  saveNow(); closeModal("modalServicio"); renderServicios();
+}
+function delServicio(id){
+  if(!confirm("¿Eliminar este tipo de servicio?"))return;
+  S.servicios=S.servicios.filter(x=>x.id!==id);
+  saveNow(); renderServicios();
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// ── ABM ARTÍCULOS ──
+// ════════════════════════════════════════════════════════════════════════
+function renderArticulos(){
+  document.getElementById("btnAddArt").innerHTML=isAdmin?`<button class="btn btn-orange" onclick="openModalArt()">＋ Agregar</button>`:"";
+  document.getElementById("artAccCol").style.display=isAdmin?"":"none";
+  const lista=S.articulos.slice().sort((a,b)=>(a.nombreYPF||"").localeCompare(b.nombreYPF||""));
+  document.getElementById("articuloBody").innerHTML=lista.map((a,i)=>`<tr>
+    <td style="color:#bbb;font-size:11px">${i+1}</td>
+    <td><b>${a.nombreYPF}</b></td>
+    <td><span class="badge b-blue">${a.numero||'—'}</span></td>
+    <td style="font-size:11px;color:#666">${a.descripcion||''}</td>
+    ${isAdmin?`<td>
+      <button class="edit-btn" onclick="openModalArt('${a.id}')">✏️</button>
+      <button class="del-btn" onclick="delArticulo('${a.id}')">🗑</button>
+    </td>`:''}
+  </tr>`).join("")||'<tr><td colspan="5" class="empty">Sin artículos</td></tr>';
+}
+function openModalArt(id){
+  const a=id?S.articulos.find(x=>x.id===id):null;
+  document.getElementById("mArtTitle").textContent=a?"Editar Artículo":"Nuevo Artículo";
+  document.getElementById("mArtNombre").value=a?.nombreYPF||"";
+  document.getElementById("mArtNumero").value=a?.numero||"";
+  document.getElementById("mArtDesc").value=a?.descripcion||"";
+  document.getElementById("mArtId").value=id||"";
+  document.getElementById("modalArt").classList.add("open");
+}
+function saveArticulo(){
+  const nombreYPF=document.getElementById("mArtNombre").value.trim();
+  if(!nombreYPF){alert("El nombre es obligatorio");return;}
+  const data={
+    nombreYPF,
+    numero:document.getElementById("mArtNumero").value.trim(),
+    descripcion:document.getElementById("mArtDesc").value.trim()
+  };
+  const id=document.getElementById("mArtId").value;
+  if(id){ Object.assign(S.articulos.find(x=>x.id===id),data); }
+  else  { S.articulos.push({id:"A"+Date.now().toString(36),...data}); }
+  saveNow(); closeModal("modalArt"); renderArticulos();
+}
+function delArticulo(id){
+  if(!confirm("¿Eliminar este artículo?"))return;
+  S.articulos=S.articulos.filter(x=>x.id!==id);
+  saveNow(); renderArticulos();
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// ── HISTORIAL DE FACTURAS PROCESADAS ──
+// ════════════════════════════════════════════════════════════════════════
+function renderFacturas(){
+  document.getElementById("facturasList").innerHTML='<div class="empty">Cargando facturas...</div>';
+  facturasRef.once("value",snap=>{
+    const data=snap.val()||{};
+    const list=Object.entries(data).map(([k,v])=>v).sort((a,b)=>(b.procesadoEn||"").localeCompare(a.procesadoEn||""));
+    if(!list.length){
+      document.getElementById("facturasList").innerHTML='<div class="empty">No hay facturas procesadas aún.</div>';
+      return;
+    }
+    document.getElementById("facturasList").innerHTML=list.map(f=>`<div style="border:1.5px solid #E0E0E0;border-radius:10px;padding:14px 16px;margin-bottom:10px;background:#fff">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-weight:700;color:#0f3460;font-size:14px">📄 ${f.factura}</div>
+          <div style="font-size:11px;color:#888;margin-top:3px">
+            Fecha: ${f.fecha||'—'} ·
+            Procesado: ${f.procesadoEn?new Date(f.procesadoEn).toLocaleString("es-AR"):'—'} ·
+            Por: ${f.procesadoPor||'—'}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:700;color:#1B5E20;font-size:14px">${fmtMoney(f.totalIVA21)}</div>
+          <div style="font-size:10px;color:#888">Gravado · ${f.rowsIVA21?.length||0} filas</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <span class="badge b-orange">No grav: ${fmtMoney(f.totalNG)}</span>
+        ${f.importeNeto>0?`<span class="badge ${Math.abs(f.totalIVA21-f.importeNeto)<5?'b-green':'b-red'}">Diff factura: ${fmtMoney(f.totalIVA21-f.importeNeto)}</span>`:''}
+        <button class="edit-btn" onclick='reExportFactura(${JSON.stringify(JSON.stringify(f))})'>⬇ Re-exportar Excel</button>
+        ${isAdmin?`<button class="del-btn" onclick="delFactura('${safeKey(f.factura)}')">🗑 Eliminar</button>`:''}
+      </div>
+    </div>`).join("");
+  });
+}
+
+function reExportFactura(jsonStr){
+  const f=JSON.parse(JSON.parse(jsonStr));
+  // reconstruir resumenProductos desde rowsIVA21
+  const resumenProductos={};
+  (f.rowsIVA21||[]).forEach(r=>{
+    if(!resumenProductos[r.desc])resumenProductos[r.desc]={lts:0,total:0};
+    resumenProductos[r.desc].lts+=r.cant;
+    resumenProductos[r.desc].total+=r.total;
+  });
+  window._lastResult = {
+    factura: f.factura, fecha: f.fecha, importeNeto: f.importeNeto, precios: f.precios||{},
+    resumenProductos,
+    totalIVA21: f.totalIVA21,
+    totalCO2: f.totalCO2, totalTasaVial: f.totalTasaVial, totalCombLiq: f.totalCombLiq, totalNG: f.totalNG,
+    rowsIVA21: f.rowsIVA21||[], rowsIVANG: f.rowsIVANG||[]
+  };
+  exportarExcel();
+}
+
+function delFactura(key){
+  if(!confirm("¿Eliminar esta factura del historial?\nNo afecta al reporte original."))return;
+  facturasRef.child(key).remove().then(()=>{ showToast("✅ Eliminada"); renderFacturas(); });
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// ── TABS, MODALES, INIT ──
+// ════════════════════════════════════════════════════════════════════════
+function showTab(name,el){
+  document.querySelectorAll(".tab-content").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+  el.classList.add("active");
+  if(name==="historial") renderFacturas();
+}
+function closeModal(id){ document.getElementById(id).classList.remove("open"); }
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("open");}));
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+yerRef.on("value",snap=>{
+  if(ignoreNext){ignoreNext=false;return;}
+  const d=snap.val();
+  if(d){
+    mergeState(d);
+  } else if(isAdmin && window.SEED){
+    // primera carga: sembrar con datos del YER.xlsx
+    const seed = window.SEED;
+    S.servicios = seed.servicios.map(s=>({id:"S"+Math.random().toString(36).slice(2,9),...s}));
+    S.centros   = seed.centros.map(c=>({id:"C"+Math.random().toString(36).slice(2,9),...c}));
+    S.articulos = seed.articulos.map(a=>({id:"A"+Math.random().toString(36).slice(2,9),...a}));
+    S.moviles   = seed.moviles.map(m=>({
+      id:"M"+Math.random().toString(36).slice(2,9),
+      interno:m.interno, dominio:m.dominio, cc:m.cc, activo:true,
+      historial:[{fecha:new Date().toISOString(),ccDesde:"",ccHasta:m.cc,motivo:"Carga inicial desde YER.xlsx",usuario:_userName}]
+    }));
+    saveNow();
+    showToast("📥 Datos iniciales cargados");
+  }
+  if(firstLoad){document.getElementById("loading").style.display="none";firstLoad=false;}
+  renderAll();
+});
+</script>
+</body>
+</html>
